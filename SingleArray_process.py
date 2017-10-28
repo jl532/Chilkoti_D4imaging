@@ -3,17 +3,27 @@ import numpy as np
 import cv2
 import time
 
+fileNameInput = "62,5.tif"
+medianBlurArg = 3 # i think this is the sliding window size, it's a moving averager to remove some random noise
+
+
 startTime = time.time()
-
-
-imgRaw = cv2.imread("62,5.tif",0) # import the raw image here, currently set as "0,488.tif"
-imgsmooth = cv2.medianBlur(imgRaw,3) # low pass filter the image, blurring a pixel with a 3 pixel sliding window
+imgRaw = cv2.imread(fileNameInput,0) # import the raw image here, currently set as "0,488.tif"
+imgsmooth = cv2.medianBlur(imgRaw,medianBlurArg) # low pass filter the image, blurring a pixel with a 3 pixel sliding window
 cimg = cv2.cvtColor(imgRaw,cv2.COLOR_GRAY2BGR) #converts raw image to grayscale
 verificationImg = cimg.copy();
 
 # this is the line of code that finds the circles in an image. more information about the parameters can be found at:
 # https://www.pyimagesearch.com/2014/07/21/detecting-circles-images-using-opencv-hough-circles/
-circles = cv2.HoughCircles(imgsmooth,cv2.cv.CV_HOUGH_GRADIENT,1,40,param1=30,param2=15,minRadius=10,maxRadius=60)
+# there are a lot of parameters that can be tweaked here
+HoughCircDP = 1 # don't mess with this for now
+HoughCircMinDist = 40 # the minimum distance between centers of circles (in pixels)
+HoughCircParam1 = 30 # don't mess with this for now, it's used for edge detection
+HoughCircParam2 = 15 # the smaller this is, the more circles will be detected (including false ones) and the larger this is, the more circles will be potentially returned. Test this though.
+HoughCircMinRadius = 10 # the lower limit of detected circle radius (in pixels). capture spots (generated from the genepix) usually are around 14-16 pixels in radius
+HoughCircMaxRadius = 60 # the upper limit of detected circle radius (in pixels)
+
+circles = cv2.HoughCircles(imgsmooth,cv2.cv.CV_HOUGH_GRADIENT,HoughCircDP,HoughCircMinDist,param1=HoughCircParam1,param2=HoughCircParam2,minRadius=HoughCircMinRadius,maxRadius=HoughCircMaxRadius)
 
 # rounds and typecasts the circle information into unsigned 16 bit integers 
 circles = np.uint16(np.around(circles))
