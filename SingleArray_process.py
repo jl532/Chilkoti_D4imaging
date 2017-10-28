@@ -5,9 +5,16 @@ import time
 
 fileNameInput = "62,5.tif"
 medianBlurArg = 3 # i think this is the sliding window size, it's a moving averager to remove some random noise
-
+HoughCircDP = 1 # don't mess with this for now
+HoughCircMinDist = 40 # the minimum distance between centers of circles (in pixels)
+HoughCircParam1 = 30 # don't mess with this for now, it's used for edge detection
+HoughCircParam2 = 15 # the smaller this is, the more circles will be detected (including false ones) and the larger this is, the more circles will be potentially returned. Test this though.
+HoughCircMinRadius = 10 # the lower limit of detected circle radius (in pixels). capture spots (generated from the genepix) usually are around 14-16 pixels in radius
+HoughCircMaxRadius = 60 # the upper limit of detected circle radius (in pixels)
+numberOfCaptureSpots = 5
 
 startTime = time.time()
+
 imgRaw = cv2.imread(fileNameInput,0) # import the raw image here, currently set as "0,488.tif"
 imgsmooth = cv2.medianBlur(imgRaw,medianBlurArg) # low pass filter the image, blurring a pixel with a 3 pixel sliding window
 cimg = cv2.cvtColor(imgRaw,cv2.COLOR_GRAY2BGR) #converts raw image to grayscale
@@ -15,13 +22,6 @@ verificationImg = cimg.copy();
 
 # this is the line of code that finds the circles in an image. more information about the parameters can be found at:
 # https://www.pyimagesearch.com/2014/07/21/detecting-circles-images-using-opencv-hough-circles/
-# there are a lot of parameters that can be tweaked here
-HoughCircDP = 1 # don't mess with this for now
-HoughCircMinDist = 40 # the minimum distance between centers of circles (in pixels)
-HoughCircParam1 = 30 # don't mess with this for now, it's used for edge detection
-HoughCircParam2 = 15 # the smaller this is, the more circles will be detected (including false ones) and the larger this is, the more circles will be potentially returned. Test this though.
-HoughCircMinRadius = 10 # the lower limit of detected circle radius (in pixels). capture spots (generated from the genepix) usually are around 14-16 pixels in radius
-HoughCircMaxRadius = 60 # the upper limit of detected circle radius (in pixels)
 
 circles = cv2.HoughCircles(imgsmooth,cv2.cv.CV_HOUGH_GRADIENT,HoughCircDP,HoughCircMinDist,param1=HoughCircParam1,param2=HoughCircParam2,minRadius=HoughCircMinRadius,maxRadius=HoughCircMaxRadius)
 
@@ -54,33 +54,36 @@ for i in circles[0,:]: # calculates the distance from each circle to the center 
     distanceFromCenter = np.sqrt( pow((i[0] - circlesCenterPosX),2) + pow((i[1] - circlesCenterPosY),2) )
     dist.append(distanceFromCenter) # stores those values into an array
 pointers = range(len(circles[0,:])) # makes a pointer array that matches the pointers in the "circle" list
-closestCircles = sorted(zip(dist,pointers),reverse=False)[:5] # sorts and returns the closest 5 ([:5]) circles
+closestCircles = sorted(zip(dist,pointers),reverse=False)[:numberOfCaptureSpots] # sorts and returns the closest numberOfCaptureSpots ([:numberOfCaptureSpots]) circles
+
+
 overallIntensities = []
 captureSpotLocations = []
-for capturePointers in closestCircles:
+for capturePointers in closestCircles: # works with one capture spot at a time, each (capturePointer) in the list of the closest circles (closestCircles)
     
     circleInformation = circles[0,capturePointers[1]] # pulls the position and radius information from the 5 closest circles
-    xCoordCirc = circleInformation[0]
+    xCoordCirc = circleInformation[0] # separates the x and y coordinates of the center of the circles and the circle radius 
     yCoordCirc = circleInformation[1]
     radiusCirc = circleInformation[2]
-    cv2.circle(cimg,(xCoordCirc,yCoordCirc),radiusCirc,(0,0,255),1) # plots all of the circles / centers
+    cv2.circle(cimg,(xCoordCirc,yCoordCirc),radiusCirc,(0,0,255),1) # plots detection circles / centers in red
     cv2.circle(cimg,(xCoordCirc,yCoordCirc),1,(0,255,0),1)
     # new code begin
-    circIntensities = []
+    circIntensities = [] # start a new list of the circle intensities 
     for exesInCircle in range(( xCoordCirc - radiusCirc ),( xCoordCirc + radiusCirc )):
         # for each x value in each circle
-        whyRange = np.sqrt(pow(radiusCirc,2) - pow((exesInCircle - xCoordCirc),2))
-        discreteWhyRange = int(whyRange)
+        whyRange = np.sqrt(pow(radiusCirc,2) - pow((exesInCircle - xCoordCirc),2)) #calculates the y-coordinates that define the top and bottom bounds of a slice (at x position) of the circle 
+        discreteWhyRange = int(whyRange) 
         #print("at x-pos of " + str(exesInCircle) +" with calculated y-range of " + str(discreteWhyRange))
         for whysInCircle in range(( yCoordCirc - discreteWhyRange),( yCoordCirc + discreteWhyRange)):
             #print("raw image intensities: " + str(imgRaw[whysInCircle,exesInCircle])+" x: "+str(exesInCircle)+" y: "+str(whysInCircle))
-            circIntensities.append(imgRaw[whysInCircle,exesInCircle])
-            verificationImg[whysInCircle,exesInCircle]=[0,0,255]
-    captureSpotLocations.append([whysInCircle,exesInCircle])
-    overallIntensities.append(np.mean(circIntensities))    
+            circIntensities.append(imgRaw[whysInCircle,exesInCircle]) # appends all pixel intensities within the circle in this list
+            verificationImg[whysInCircle,exesInCircle]=[0,0,255] # colors red in all pixels within the circle, just for verification
+    captureSpotLocations.append([whysInCircle,exesInCircle]) # appends the locations of all of the pixels within the circle 
+    overallIntensities.append(np.mean(circIntensities)) #takes the average of all the pixel intensities within the circle in question
     
     # new code end
 finishedTime = time.time() - startTime
+
 cv2.imshow('Raw Image',imgRaw) # show the original raw image
 cv2.imshow('Raw Image with Superimposed, identified Spots',cimg) # show the raw image with superimposed identified circles
 cv2.imshow('Redded out areas of capture spots',verificationImg)
