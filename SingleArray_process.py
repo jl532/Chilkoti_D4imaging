@@ -6,13 +6,13 @@ import time
 fileNameInput = "62,5.tif"
 medianBlurArg = 3 # i think this is the sliding window size, it's a moving averager to remove some random noise
 HoughCircDP = 1 # don't mess with this for now
-HoughCircMinDist = 40 # the minimum distance between centers of circles (in pixels)
+HoughCircMinDist = 30 # the minimum distance between centers of circles (in pixels)
 HoughCircParam1 = 30 # don't mess with this for now, it's used for edge detection
-HoughCircParam2 = 15 # the smaller this is, the more circles will be detected (including false ones) and the larger this is, the more circles will be potentially returned. Test this though.
-HoughCircMinRadius = 10 # the lower limit of detected circle radius (in pixels). capture spots (generated from the genepix) usually are around 14-16 pixels in radius
-HoughCircMaxRadius = 60 # the upper limit of detected circle radius (in pixels)
+HoughCircParam2 = 16 # the smaller this is, the more circles will be detected (including false ones) and the larger this is, the more circles will be potentially returned. Test this though.
+HoughCircMinRadius = 13 # the lower limit of detected circle radius (in pixels). capture spots (generated from the genepix) usually are around 14-16 pixels in radius
+HoughCircMaxRadius = 30 # the upper limit of detected circle radius (in pixels)
 numberOfCaptureSpots = 5
-
+ 
 startTime = time.time()
 
 imgRaw = cv2.imread(fileNameInput,0) # import the raw image here, currently set as "0,488.tif"

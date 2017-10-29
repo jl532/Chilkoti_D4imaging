@@ -2,6 +2,7 @@
 import numpy as np 
 import cv2
 import time
+import sys
 
 arrayCoords = []
 def mouseLocationClick(event,x,y,flags,param):
@@ -9,7 +10,22 @@ def mouseLocationClick(event,x,y,flags,param):
         print("click identified at: " +str([x,y]))
         arrayCoords.append([x,y])
 
-
+class D4Array:
+    "a class that carries all of the information needed for each Array"
+    def __init__(self,analyte,concentration,intensities,background,d4fileName,d4coordinates,capturePositions):
+        self.analyte = analyte
+        self.concentration = concentration
+        self.intensities = intensities
+        self.stdev = np.std(intensities)
+        self.background = background
+        self.d4fileName = d4fileName
+        self.d4coordinates = d4coordinates
+        self.capturePositions = capturePositions
+        
+    def displayAllInfo(self):
+        print(self.analyte + " " + str(self.concentration)+ " " +str(self.intensities)+ " " +str(self.stdev)+ " "+str(self.background))
+        print(self.d4fileName+" "+str(self.d4coordinates)+" "+str(self.capturePositions))
+                
 fileIObool = True
 while fileIObool:
     # prompt user for file name in same directory as the python script LeptinGood.tif
@@ -19,29 +35,43 @@ while fileIObool:
     # verify file identity
     cv2.namedWindow('Image: ' + fileName +  ' uploaded to program',cv2.WINDOW_NORMAL) # make a named window'
     cv2.imshow('Image: ' + fileName +  ' uploaded to program',imgRaw)
-    print("Press X if this is the right file: " + str(fileName) + " otherwise, press any other key  ")
+    print("Press X if this is the right file: " + str(fileName) + ". press b to choose a different file. to exit, press q.  ")
     keyPress = cv2.waitKey(0)
     cv2.destroyAllWindows()
-    if keyPress == 120:
+    if keyPress == ord("x"):
         print("fileIObool loop complete")
         fileIObool = False
-    else:
+    if keyPress == ord("b"):
         print("fileIObool loop re-run.")
-
+    if keyPress == ord("q"):
+        sys.exit()
 
 # user parameters to be used later:
-analyte = raw_input("What is the analyte being used in this assay? Just add more in with / separating each  ")
-print(analyte + " is/are the selected analyte for this slide")
-numberOfArrays = raw_input("How many total Arrays are there in this image?  ")
-print(numberOfArrays + " is the number of arrays on this image")
-numberOfCaptureSpots = raw_input("How many capture spots are there in each Array?  ")
-print(numberOfCaptureSpots + " is the number of capture spots in each Array")
-
-
+userPromptBool = True
+while(userPromptBool):
+    IOanalyte = raw_input("What is the analyte being used in this assay? Just add more in with / separating each:  ")
+    numberOfArrays = raw_input("How many total Arrays are there in this image?  ")
+    startingConcentration = raw_input("What is the starting concentration in ng/mL?   ")
+    numberOfCaptureSpots = raw_input("How many capture spots are there in each Array?  ")
+    
+    print(IOanalyte + " is/are the selected analyte for this slide")
+    print(str(numberOfArrays) + " is the number of arrays on this image")
+    print(startingConcentration + " is the starting concentration.")
+    print(numberOfCaptureSpots + " is the number of capture spots in each Array")
+    promptVerify = raw_input("verify the information you have entered. enter x to continue, b to redo, q to exit program:   ")
+    if promptVerify == 'x':
+        userPromptBool = False
+    if promptVerify == 'b':
+        userPromptBool = True
+    if promptVerify == 'q':
+        sys.exit()
+    
+listD4Arrays = []
+d4Concentration = float(startingConcentration)
 for eachArray in range(int(numberOfArrays)):
     cropIOBool = True
     while cropIOBool:
-        print("Select Array " + str(eachArray) + " region, clicking Top left, and then bottom right. Press x to confirm the area")
+        print("Select Array " + str(eachArray+1) + " region, clicking Top left, and then bottom right. Press x to confirm the area")
         
         # display the fill .tif image 
         imgRaw = cv2.imread(str(fileName),0)
@@ -62,17 +92,21 @@ for eachArray in range(int(numberOfArrays)):
         subImg = imgRaw[cropYCoords[0]:cropYCoords[1],cropXCoords[0]:cropXCoords[1]]
         cv2.namedWindow('subcropped image',cv2.WINDOW_NORMAL) 
         cv2.imshow('subcropped image',subImg)
-        print("x to continue. b to reselect the region")
+        print("x to continue. b to reselect the region, q to exit program")
         keyPress = cv2.waitKey(0)
         cv2.destroyAllWindows()
-        if keyPress == 98:
+        if keyPress == ord("b"):
             print("redoing cropIOBool Loop")
-        if keyPress == 120:
+        if keyPress == ord("x"):
             print("cropIOBool Loop complete")
             cropIOBool = False
+        if keyPress == ord("q"):
+            print("CropIOBool Loop exit")
+            sys.exit()
     singleArrayIDBool = True
     while singleArrayIDBool:
-        verifyImg = subImg
+        verifyImg = cv2.cvtColor(subImg,cv2.COLOR_GRAY2BGR)
+                
         smoothedCroppedIMG = cv2.medianBlur(subImg,3)
         circles = cv2.HoughCircles(smoothedCroppedIMG,cv2.cv.CV_HOUGH_GRADIENT,1,40,param1=30,param2=15,minRadius=10,maxRadius=60)
         circles = np.uint16(np.around(circles))
@@ -95,8 +129,12 @@ for eachArray in range(int(numberOfArrays)):
             dist.append(distanceFromCenter) # stores those values into an array
         pointers = range(len(circles[0,:])) # makes a pointer array that matches the pointers in the "circle" list
         closestCircles = sorted(zip(dist,pointers),reverse=False)[:int(numberOfCaptureSpots)] # sorts and returns the closest 5 ([:5]) circles
-        overallIntensities = []
+        
+        
+        # looking at the capture spots
+        singleArrayIntensities = []
         captureSpotLocations = []
+        print("found " + str(len(closestCircles)) + " circles")
         for capturePointers in closestCircles:
             circleInformation = circles[0,capturePointers[1]] # pulls the position and radius information from the 5 closest circles
             xCoordCirc = circleInformation[0]
@@ -115,16 +153,29 @@ for eachArray in range(int(numberOfArrays)):
                     #print("raw image intensities: " + str(imgRaw[whysInCircle,exesInCircle])+" x: "+str(exesInCircle)+" y: "+str(whysInCircle))
                     circIntensities.append(subImg[whysInCircle,exesInCircle])
             captureSpotLocations.append([whysInCircle,exesInCircle])
-            overallIntensities.append(np.mean(circIntensities))  
+            singleArrayIntensities.append(np.mean(circIntensities))  
+        
+        # looking at the background, from two radii away from each circle
+        background=69        
+        
         cv2.imshow("verification of spot IDs",verifyImg)
         cv2.imshow("original cropped image",subImg)
-        print("press x to end. press b to redo")
-        pressedKey = cv2.waitKey(0) # press any key on the image window to close and terminate the program
+        D4ArrayEach = D4Array(IOanalyte,d4Concentration,singleArrayIntensities,background,fileName,[cropXCoords,cropYCoords],captureSpotLocations)
+        D4ArrayEach.displayAllInfo()
+        print("press x if the array was properly analyzed. press b to redo")
+        pressedKey = cv2.waitKey(0) 
         cv2.destroyAllWindows()
-        if keyPress == 98:
+        if keyPress == ord("b"):
             print("redoing singleArrayIDBool Loop")
-        if keyPress == 120:
+        if keyPress == ord("x"):
             print("singleArrayIDBool Loop complete")
             singleArrayIDBool = False
+            d4Concentration = d4Concentration / 2.0
+            listD4Arrays.append(D4ArrayEach)
+        if keyPress == ord("q"):
+            print("debug loop exit")
+            sys.exit()
+print("program terminated")
+        
         
         # add in modification of number of capture spots or something, and interfacing for concentrations. 
