@@ -1,8 +1,8 @@
 # import libraries 
 import numpy as np 
 import cv2
-import time
 import sys
+from operator import itemgetter
 
 arrayCoords = []
 def mouseLocationClick(event,x,y,flags,param):
@@ -12,7 +12,7 @@ def mouseLocationClick(event,x,y,flags,param):
 
 class D4Array:
     "a class that carries all of the information needed for each Array"
-    def __init__(self,analyte,concentration,intensities,background,d4fileName,d4coordinates,capturePositions , captureRadii):
+    def __init__(self,analyte,concentration,intensities,background,d4fileName,d4coordinates,centerOfArrayCoordinates, capturePositions , captureRadii):
         self.analyte = analyte
         self.concentration = concentration
         self.intensities = intensities
@@ -20,12 +20,13 @@ class D4Array:
         self.background = background
         self.d4fileName = d4fileName
         self.d4coordinates = d4coordinates
+        self.centerOfArrayCoordinates = centerOfArrayCoordinates
         self.capturePositions = capturePositions
         self.captureRadii = captureRadii
         
     def displayAllInfo(self):
         print(self.analyte + " " + str(self.concentration)+ " " +str(self.intensities)+ " " +str(self.stdev)+ " "+str(self.background))
-        print(self.d4fileName+" "+str(self.d4coordinates)+" "+str(self.capturePositions)+" "+str(self.captureRadii))
+        print(self.d4fileName+" "+str(self.d4coordinates)+" "+str(self.centerOfArrayCoordinates)+" "+str(self.capturePositions)+" "+str(self.captureRadii))
                 
 fileIObool = True
 while fileIObool:
@@ -81,10 +82,13 @@ for eachArray in range(int(numberOfArrays)):
         cv2.setMouseCallback('Raw Image', mouseLocationClick)
         cv2.imshow('Raw Image',imgRaw)
         keyPress = cv2.waitKey(0)
-        if keyPress == 120:
+        if keyPress == ord("x"):
             arrayBotRigCoords = arrayCoords.pop()
             arrayTopLefCoords = arrayCoords.pop()
             print("subplot coordinates: " + str(arrayBotRigCoords)+ " " + str(arrayTopLefCoords))
+        if keyPress == ord("q"):
+            print("cropping system exit")
+            sys.exit()
         cv2.destroyAllWindows()
         cropXCoords = sorted([arrayBotRigCoords[0],arrayTopLefCoords[0]])
         cropYCoords = sorted([arrayBotRigCoords[1],arrayTopLefCoords[1]])
@@ -103,7 +107,7 @@ for eachArray in range(int(numberOfArrays)):
             print("cropIOBool Loop complete")
             cropIOBool = False
         if keyPress == ord("c"):
-            print("cropIOBool Loop complete")
+            print("cropIOBool Loop complete--BLANK")
             cropIOBool = False
             blankBool = True
         if keyPress == ord("q"):
@@ -114,7 +118,7 @@ for eachArray in range(int(numberOfArrays)):
         verifyImg = cv2.cvtColor(subImg,cv2.COLOR_GRAY2BGR)
                 
         smoothedCroppedIMG = cv2.medianBlur(subImg,3)
-        circles = cv2.HoughCircles(smoothedCroppedIMG,cv2.cv.CV_HOUGH_GRADIENT,1,40,param1=30,param2=15,minRadius=10,maxRadius=60)
+        circles = cv2.HoughCircles(smoothedCroppedIMG,cv2.cv.CV_HOUGH_GRADIENT,1,40,param1=30,param2=16,minRadius=10,maxRadius=20)
         circles = np.uint16(np.around(circles))
         circlesCenterPosX = 0
         circlesCenterPosY = 0
@@ -132,6 +136,36 @@ for eachArray in range(int(numberOfArrays)):
             if len(listD4Arrays) == 0:
                 print("error: do not start with a blank. begin with non-blank arrays so average position of capture spots is identified.")
                 singleArrayIDBool = False
+            else:
+                print("using previously analyzed arrays within image to estimate blank capture spot locations")
+                sumCaptureCoordinates= []
+                for whatever in range(numberOfCaptureSpots):
+                    sumCaptureCoordinates.append([0,0])
+                
+                for eachPreviousArray in listD4Arrays:
+                    centerCoordinates = eachPreviousArray.centerOfArrayCoordinates
+                    captureCoordinates = eachPreviousArray.capturePositions
+                    
+                    normalizedCapCoordinates = []
+                    for eachCapCoord in captureCoordinates:
+                        normalizedCapCoordinates.append([eachCapCoord[0]  - centerCoordinates[0] , eachCapCoord[1]- centerCoordinates[1] ])
+                    captureRangeOfExes = max(blankExes[0] for blankExes in normalizedCapCoordinates) - min(blankExes[0] for blankExes in normalizedCapCoordinates)
+                    captureRangeOfWhys = max(blankWhys[1] for blankWhys in normalizedCapCoordinates) - min(blankWhys[1] for blankWhys in normalizedCapCoordinates)
+                    # if the range of exes is larger than the average capture circle size, the cap spots vary in the y direction, so sort along y
+                    if (captureRangeOfExes > np.mean(eachPreviousArray.captureRadii)):
+                        blankSortedCoords = sorted(normalizedCapCoordinates, key=itemgetter(1))
+                    # if the range of whys is larger than the average capture circle size, the cap spots vary in the x direction, so sort along x
+                    elif (captureRangeOfWhys > np.mean(eachPreviousArray.captureRadii)):
+                        blankSortedCoords = sorted(normalizedCapCoordinates, key=itemgetter(0))
+                    else: 
+                        print("Error in sorting previous capture spots for blank...")
+                    for index in range(numberOfCaptureSpots):
+                        for xy in range(2):
+                            sumCaptureCoordinates[index][xy] = sumCaptureCoordinates[index][xy] + blankSortedCoords[index][xy]
+                avgCaptureCoordinates = 
+                
+                    
+                singleArrayIDBool = False
         else:
             dist = []
             for i in circles[0,:]: # calculates the distance from each circle to the center of the array
@@ -139,7 +173,6 @@ for eachArray in range(int(numberOfArrays)):
                 dist.append(distanceFromCenter) # stores those values into an array
             pointers = range(len(circles[0,:])) # makes a pointer array that matches the pointers in the "circle" list
             closestCircles = sorted(zip(dist,pointers),reverse=False)[:int(numberOfCaptureSpots)] # sorts and returns the closest 5 ([:5]) circles
-            
             
             # looking at the capture spots
             singleArrayIntensities = []
@@ -164,7 +197,7 @@ for eachArray in range(int(numberOfArrays)):
                         #print("raw image intensities: " + str(imgRaw[whysInCircle,exesInCircle])+" x: "+str(exesInCircle)+" y: "+str(whysInCircle))
                         circIntensities.append(subImg[whysInCircle,exesInCircle])
                         verifyImg[whysInCircle,exesInCircle]=(255,0,0)
-                captureSpotLocations.append([yCoordCirc,xCoordCirc])
+                captureSpotLocations.append([xCoordCirc,yCoordCirc])
                 captureSpotRadii.append(radiusCirc)
                 singleArrayIntensities.append(np.mean(circIntensities))  
             
@@ -205,7 +238,7 @@ for eachArray in range(int(numberOfArrays)):
             
             cv2.imshow("verification of spot IDs",verifyImg)
             cv2.imshow("original cropped image",subImg)
-            D4ArrayEach = D4Array(IOanalyte,d4Concentration,singleArrayIntensities,background,fileName,[cropXCoords,cropYCoords],captureSpotLocations, captureSpotRadii)
+            D4ArrayEach = D4Array(IOanalyte,d4Concentration,singleArrayIntensities,background,fileName,[cropXCoords,cropYCoords],[circlesCenterPosX,circlesCenterPosY],captureSpotLocations, captureSpotRadii)
             D4ArrayEach.displayAllInfo()
             print("press x if the array was properly analyzed. press b to redo")
             pressedKey = cv2.waitKey(0) 
