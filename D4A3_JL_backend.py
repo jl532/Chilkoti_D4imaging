@@ -12,7 +12,7 @@ def mouseLocationClick(event,x,y,flags,param):
 
 class D4Array:
     "a class that carries all of the information needed for each Array"
-    def __init__(self,analyte,concentration,intensities,background,d4fileName,d4coordinates,capturePositions):
+    def __init__(self,analyte,concentration,intensities,background,d4fileName,d4coordinates,capturePositions , captureRadii):
         self.analyte = analyte
         self.concentration = concentration
         self.intensities = intensities
@@ -21,10 +21,11 @@ class D4Array:
         self.d4fileName = d4fileName
         self.d4coordinates = d4coordinates
         self.capturePositions = capturePositions
+        self.captureRadii = captureRadii
         
     def displayAllInfo(self):
         print(self.analyte + " " + str(self.concentration)+ " " +str(self.intensities)+ " " +str(self.stdev)+ " "+str(self.background))
-        print(self.d4fileName+" "+str(self.d4coordinates)+" "+str(self.capturePositions))
+        print(self.d4fileName+" "+str(self.d4coordinates)+" "+str(self.capturePositions)+" "+str(self.captureRadii))
                 
 fileIObool = True
 while fileIObool:
@@ -70,6 +71,7 @@ listD4Arrays = []
 d4Concentration = float(startingConcentration)
 for eachArray in range(int(numberOfArrays)):
     cropIOBool = True
+    blankBool = False
     while cropIOBool:
         print("Select Array " + str(eachArray+1) + " region, clicking Top left, and then bottom right. Press x to confirm the area")
         
@@ -92,7 +94,7 @@ for eachArray in range(int(numberOfArrays)):
         subImg = imgRaw[cropYCoords[0]:cropYCoords[1],cropXCoords[0]:cropXCoords[1]]
         cv2.namedWindow('subcropped image',cv2.WINDOW_NORMAL) 
         cv2.imshow('subcropped image',subImg)
-        print("x to continue. b to reselect the region, q to exit program")
+        print("x to continue, c to blank, b to reselect, q to exit program")
         keyPress = cv2.waitKey(0)
         cv2.destroyAllWindows()
         if keyPress == ord("b"):
@@ -100,6 +102,10 @@ for eachArray in range(int(numberOfArrays)):
         if keyPress == ord("x"):
             print("cropIOBool Loop complete")
             cropIOBool = False
+        if keyPress == ord("c"):
+            print("cropIOBool Loop complete")
+            cropIOBool = False
+            blankBool = True
         if keyPress == ord("q"):
             print("CropIOBool Loop exit")
             sys.exit()
@@ -122,59 +128,98 @@ for eachArray in range(int(numberOfArrays)):
         circlesCenterPosX = circlesCenterPosX/circleCount #this is where the averages are calculated
         circlesCenterPosY = circlesCenterPosY/circleCount
         cv2.circle(verifyImg,(circlesCenterPosX,circlesCenterPosY),5,(255,0,0),3) # draws a blue marker at the calculated center of the array
-        
-        dist = []
-        for i in circles[0,:]: # calculates the distance from each circle to the center of the array
-            distanceFromCenter = np.sqrt( pow((i[0] - circlesCenterPosX),2) + pow((i[1] - circlesCenterPosY),2) )
-            dist.append(distanceFromCenter) # stores those values into an array
-        pointers = range(len(circles[0,:])) # makes a pointer array that matches the pointers in the "circle" list
-        closestCircles = sorted(zip(dist,pointers),reverse=False)[:int(numberOfCaptureSpots)] # sorts and returns the closest 5 ([:5]) circles
-        
-        
-        # looking at the capture spots
-        singleArrayIntensities = []
-        captureSpotLocations = []
-        print("found " + str(len(closestCircles)) + " circles")
-        for capturePointers in closestCircles:
-            circleInformation = circles[0,capturePointers[1]] # pulls the position and radius information from the 5 closest circles
-            xCoordCirc = circleInformation[0]
-            yCoordCirc = circleInformation[1]
-            radiusCirc = circleInformation[2]
-            cv2.circle(verifyImg,(xCoordCirc,yCoordCirc),radiusCirc,(0,0,255),1) # plots all of the circles / centers
-            cv2.circle(verifyImg,(xCoordCirc,yCoordCirc),1,(0,255,0),1)
-            # new code begin
-            circIntensities = []
-            for exesInCircle in range(( xCoordCirc - radiusCirc ),( xCoordCirc + radiusCirc )):
-                # for each x value in each circle
-                whyRange = np.sqrt(pow(radiusCirc,2) - pow((exesInCircle - xCoordCirc),2))
-                discreteWhyRange = int(whyRange)
-                #print("at x-pos of " + str(exesInCircle) +" with calculated y-range of " + str(discreteWhyRange))
-                for whysInCircle in range(( yCoordCirc - discreteWhyRange),( yCoordCirc + discreteWhyRange)):
-                    #print("raw image intensities: " + str(imgRaw[whysInCircle,exesInCircle])+" x: "+str(exesInCircle)+" y: "+str(whysInCircle))
-                    circIntensities.append(subImg[whysInCircle,exesInCircle])
-            captureSpotLocations.append([whysInCircle,exesInCircle])
-            singleArrayIntensities.append(np.mean(circIntensities))  
-        
-        # looking at the background, from two radii away from each circle
-        background=69        
-        
-        cv2.imshow("verification of spot IDs",verifyImg)
-        cv2.imshow("original cropped image",subImg)
-        D4ArrayEach = D4Array(IOanalyte,d4Concentration,singleArrayIntensities,background,fileName,[cropXCoords,cropYCoords],captureSpotLocations)
-        D4ArrayEach.displayAllInfo()
-        print("press x if the array was properly analyzed. press b to redo")
-        pressedKey = cv2.waitKey(0) 
-        cv2.destroyAllWindows()
-        if keyPress == ord("b"):
-            print("redoing singleArrayIDBool Loop")
-        if keyPress == ord("x"):
-            print("singleArrayIDBool Loop complete")
-            singleArrayIDBool = False
-            d4Concentration = d4Concentration / 2.0
-            listD4Arrays.append(D4ArrayEach)
-        if keyPress == ord("q"):
-            print("debug loop exit")
-            sys.exit()
+        if blankBool:
+            if len(listD4Arrays) == 0:
+                print("error: do not start with a blank. begin with non-blank arrays so average position of capture spots is identified.")
+                singleArrayIDBool = False
+        else:
+            dist = []
+            for i in circles[0,:]: # calculates the distance from each circle to the center of the array
+                distanceFromCenter = np.sqrt( pow((i[0] - circlesCenterPosX),2) + pow((i[1] - circlesCenterPosY),2) )
+                dist.append(distanceFromCenter) # stores those values into an array
+            pointers = range(len(circles[0,:])) # makes a pointer array that matches the pointers in the "circle" list
+            closestCircles = sorted(zip(dist,pointers),reverse=False)[:int(numberOfCaptureSpots)] # sorts and returns the closest 5 ([:5]) circles
+            
+            
+            # looking at the capture spots
+            singleArrayIntensities = []
+            captureSpotLocations = []
+            captureSpotRadii = []
+            print("found " + str(len(closestCircles)) + " circles")
+            for capturePointers in closestCircles:
+                circleInformation = circles[0,capturePointers[1]] # pulls the position and radius information from the 5 closest circles
+                xCoordCirc = circleInformation[0]
+                yCoordCirc = circleInformation[1]
+                radiusCirc = circleInformation[2] + 2
+                cv2.circle(verifyImg,(xCoordCirc,yCoordCirc),radiusCirc,(0,0,255),1) # plots all of the circles / centers
+                cv2.circle(verifyImg,(xCoordCirc,yCoordCirc),1,(0,255,0),1)
+                # new code begin
+                circIntensities = []
+                for exesInCircle in range(( xCoordCirc - radiusCirc),( xCoordCirc + radiusCirc)):
+                    # for each x value in each circle
+                    whyRange = np.sqrt(pow(radiusCirc,2) - pow((exesInCircle - xCoordCirc),2))
+                    discreteWhyRange = int(whyRange)
+                    #print("at x-pos of " + str(exesInCircle) +" with calculated y-range of " + str(discreteWhyRange))
+                    for whysInCircle in range(( yCoordCirc - discreteWhyRange),( yCoordCirc + discreteWhyRange)):
+                        #print("raw image intensities: " + str(imgRaw[whysInCircle,exesInCircle])+" x: "+str(exesInCircle)+" y: "+str(whysInCircle))
+                        circIntensities.append(subImg[whysInCircle,exesInCircle])
+                        verifyImg[whysInCircle,exesInCircle]=(255,0,0)
+                captureSpotLocations.append([yCoordCirc,xCoordCirc])
+                captureSpotRadii.append(radiusCirc)
+                singleArrayIntensities.append(np.mean(circIntensities))  
+            
+            # looking at the background, from two radii away from each circle
+            # identify a background area by excluding the region outside of the capture spots
+            # background = 69
+            maxCircRadius = max(captureSpotRadii)
+            bgMaxXCircCoordinate = max([bgXCoords[1] for bgXCoords in captureSpotLocations])
+            bgMinXCircCoordinate = min([bgXCoords[1] for bgXCoords in captureSpotLocations])
+            bgMaxYCircCoordinate = max([bgYCoords[0] for bgYCoords in captureSpotLocations])
+            bgMinYCircCoordinate = min([bgYCoords[0] for bgYCoords in captureSpotLocations])
+            bgInnerBoundary = int(round(1.2 * maxCircRadius))
+            bgOuterBoundary = 3 * maxCircRadius
+            
+            # making the two concentric rectangles for background noise
+            bgBigRectTop = bgMinYCircCoordinate - bgOuterBoundary
+            bgBigRectBot = bgMaxYCircCoordinate + bgOuterBoundary
+            
+            bgBigRectRight = bgMaxXCircCoordinate + bgOuterBoundary
+            bgBigRectLeft = bgMinXCircCoordinate - bgOuterBoundary
+            
+            bgSmolRectTop = bgMinYCircCoordinate - bgInnerBoundary
+            bgSmolRectBot = bgMaxYCircCoordinate + bgInnerBoundary
+            
+            bgSmolRectRight = bgMaxXCircCoordinate + bgInnerBoundary
+            bgSmolRectLeft = bgMinXCircCoordinate - bgInnerBoundary
+            
+            bgIntensities =[]
+            for exesInBG in range(bgBigRectLeft , bgBigRectRight):
+                    for whysInBG in range(bgBigRectTop , bgBigRectBot):
+                        if ((whysInBG > bgSmolRectBot) or (whysInBG < bgSmolRectTop)):
+                            bgIntensities.append(subImg[whysInBG,exesInBG])
+                            verifyImg[whysInBG,exesInBG]=(0,0,255)
+                        elif ((exesInBG > bgSmolRectRight) or (exesInBG < bgSmolRectLeft)):
+                            bgIntensities.append(subImg[whysInBG,exesInBG])
+                            verifyImg[whysInBG,exesInBG]=(0,0,255)
+            background = np.mean(bgIntensities)
+            
+            cv2.imshow("verification of spot IDs",verifyImg)
+            cv2.imshow("original cropped image",subImg)
+            D4ArrayEach = D4Array(IOanalyte,d4Concentration,singleArrayIntensities,background,fileName,[cropXCoords,cropYCoords],captureSpotLocations, captureSpotRadii)
+            D4ArrayEach.displayAllInfo()
+            print("press x if the array was properly analyzed. press b to redo")
+            pressedKey = cv2.waitKey(0) 
+            cv2.destroyAllWindows()
+            if keyPress == ord("b"):
+                print("redoing singleArrayIDBool Loop")
+            if keyPress == ord("x"):
+                print("singleArrayIDBool Loop complete")
+                singleArrayIDBool = False
+                d4Concentration = d4Concentration / 2.0
+                listD4Arrays.append(D4ArrayEach)
+            if keyPress == ord("q"):
+                print("debug loop exit")
+                sys.exit()
 print("program terminated")
         
         
