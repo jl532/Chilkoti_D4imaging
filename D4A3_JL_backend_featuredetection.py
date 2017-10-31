@@ -52,25 +52,35 @@ while fileIObool:
 # user parameters to be used later:
 userPromptBool = True
 while(userPromptBool):
-    IOanalyte = raw_input("What is the analyte being used in this assay? Just add more in with / separating each:  ")
-    numberOfArrays = raw_input("How many total Arrays are there in this image?  ")
-    startingConcentration = raw_input("What is the starting concentration in ng/mL?   ")
-    numberOfCaptureSpots = raw_input("How many capture spots are there in each Array?  ")
+    IOanalyte = "lorem ipsum dolor" #raw_input("What is the analyte being used in this assay? Just add more in with / separating each:  ")
+    numberOfArrays = 24   #raw_input("How many total Arrays are there in this image?  ")
+    startingConcentration = 500 #raw_input("What is the starting concentration in ng/mL?   ")
+    numberOfCaptureSpots = 5 #raw_input("How many capture spots are there in each Array?  ")
     
     print(IOanalyte + " is/are the selected analyte for this slide")
     print(str(numberOfArrays) + " is the number of arrays on this image")
     print(startingConcentration + " is the starting concentration.")
     print(numberOfCaptureSpots + " is the number of capture spots in each Array")
-    promptVerify = raw_input("verify the information you have entered. enter x to continue, b to redo, q to exit program:   ")
-    if promptVerify == 'x':
-        userPromptBool = False
-    if promptVerify == 'b':
-        userPromptBool = True
-    if promptVerify == 'q':
-        sys.exit()
+    
+    
+    
+    
+    userPromptBool = False
+    
+    
+    
+    
+    #promptVerify = raw_input("verify the information you have entered. enter x to continue, b to redo, q to exit program:   ")
+#    if promptVerify == 'x':
+#        userPromptBool = False
+#    if promptVerify == 'b':
+#        userPromptBool = True
+#    if promptVerify == 'q':
+#        sys.exit()
     
 listD4Arrays = []
 d4Concentration = float(startingConcentration)
+
 for eachArray in range(int(numberOfArrays)):
     cropIOBool = True
     blankBool = False
@@ -93,8 +103,6 @@ for eachArray in range(int(numberOfArrays)):
         cv2.destroyAllWindows()
         cropXCoords = sorted([arrayBotRigCoords[0],arrayTopLefCoords[0]])
         cropYCoords = sorted([arrayBotRigCoords[1],arrayTopLefCoords[1]])
-        print(str(cropXCoords))
-        print(str(cropYCoords))
         
         subImg = imgRaw[cropYCoords[0]:cropYCoords[1],cropXCoords[0]:cropXCoords[1]]
         cv2.namedWindow('subcropped image',cv2.WINDOW_NORMAL) 
@@ -114,6 +122,7 @@ for eachArray in range(int(numberOfArrays)):
         if keyPress == ord("q"):
             print("CropIOBool Loop exit")
             sys.exit()
+            
     singleArrayIDBool = True
     while singleArrayIDBool:
         verifyImg = cv2.cvtColor(subImg,cv2.COLOR_GRAY2BGR)

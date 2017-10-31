@@ -3,6 +3,25 @@ import numpy as np
 import cv2
 import time
 
+arrayCoords = []
+def mouseLocationClick(event,x,y,flags,param):
+    if event == cv2.EVENT_LBUTTONDOWN:
+        print("click identified at: " +str([x,y]))
+        arrayCoords.append([x,y])
+        
+def pullElementsFromList(datList,argument): # use this when you have a 2d list and want a specific element from each entry
+    return [thatSpecificArgument[argument] for thatSpecificArgument in datList]
+        
+def circleDistanceSorter(circleArray,position,numberOfCircles):
+    dist = []
+    for i in circleArray[0,:]: # calculates the distance from each circle to the center of the array
+        distanceFromCenter = np.sqrt( pow((i[0] - position[0]),2) + pow((i[1] - position[1]),2) )
+        dist.append(distanceFromCenter) # stores those values into an array
+    pointers = range(len(circles[0,:])) # makes a pointer array that matches the pointers in the "circle" list
+    closestCircles = sorted(zip(dist,pointers),reverse=False)[:numberOfCircles] # sorts and returns the closest numberOfCaptureSpots ([:numberOfCaptureSpots]) circles
+    return circleArray[0,pullElementsFromList(closestCircles,1)]
+
+
 fileNameInput = "62,5.tif"
 medianBlurArg = 3 # i think this is the sliding window size, it's a moving averager to remove some random noise
 HoughCircDP = 1 # don't mess with this for now
@@ -32,36 +51,23 @@ circles = np.uint16(np.around(circles))
 # The x and y coordinates are added together first in the next for loop, and then 
 # the total x and y coordinate sums are divided by the number of counted circles
 
-circlesCenterPosX = 0
-circlesCenterPosY = 0
-circleCount = 0
+arrayCenterPosX = int(np.mean(circles[0,:][:,0]))
+arrayCenterPosY = int(np.mean(circles[0,:][:,1]))
+circleCount = len(circles[0,:][:,1])
 
 for i in circles[0,:]:
     cv2.circle(cimg,(i[0],i[1]),i[2],(0,255,0),1) # draw the outer circle
     cv2.circle(cimg,(i[0],i[1]),2,(0,0,255),2) # draw the center of the circle
-    circleCount = circleCount + 1 # this counts the number of identified circles
-    circlesCenterPosX = circlesCenterPosX + i[0] # sum of x positions added together
-    circlesCenterPosY = circlesCenterPosY + i[1]
-circlesCenterPosX = circlesCenterPosX/circleCount #this is where the averages are calculated
-circlesCenterPosY = circlesCenterPosY/circleCount
 
 # draws a blue marker at the calculated center of the array
-cv2.circle(cimg,(circlesCenterPosX,circlesCenterPosY),5,(255,0,0),3)
+cv2.circle(cimg,(arrayCenterPosX,arrayCenterPosY),5,(255,0,0),3)
 
 # compare the distance from the center and categorize which ones are closest (5 for now)
-dist = []
-for i in circles[0,:]: # calculates the distance from each circle to the center of the array
-    distanceFromCenter = np.sqrt( pow((i[0] - circlesCenterPosX),2) + pow((i[1] - circlesCenterPosY),2) )
-    dist.append(distanceFromCenter) # stores those values into an array
-pointers = range(len(circles[0,:])) # makes a pointer array that matches the pointers in the "circle" list
-closestCircles = sorted(zip(dist,pointers),reverse=False)[:numberOfCaptureSpots] # sorts and returns the closest numberOfCaptureSpots ([:numberOfCaptureSpots]) circles
-
+closestCirclesFromCenter = circleDistanceSorter(circles,[arrayCenterPosX,arrayCenterPosY],5)
 
 overallIntensities = []
 captureSpotLocations = []
-for capturePointers in closestCircles: # works with one capture spot at a time, each (capturePointer) in the list of the closest circles (closestCircles)
-    
-    circleInformation = circles[0,capturePointers[1]] # pulls the position and radius information from the 5 closest circles
+for circleInformation in closestCirclesFromCenter:
     xCoordCirc = circleInformation[0] # separates the x and y coordinates of the center of the circles and the circle radius 
     yCoordCirc = circleInformation[1]
     radiusCirc = circleInformation[2]
@@ -78,7 +84,7 @@ for capturePointers in closestCircles: # works with one capture spot at a time, 
             #print("raw image intensities: " + str(imgRaw[whysInCircle,exesInCircle])+" x: "+str(exesInCircle)+" y: "+str(whysInCircle))
             circIntensities.append(imgRaw[whysInCircle,exesInCircle]) # appends all pixel intensities within the circle in this list
             verificationImg[whysInCircle,exesInCircle]=[0,0,255] # colors red in all pixels within the circle, just for verification
-    captureSpotLocations.append([whysInCircle,exesInCircle]) # appends the locations of all of the pixels within the circle 
+    captureSpotLocations.append([exesInCircle,whysInCircle]) # appends the locations of all of the pixels within the circle 
     overallIntensities.append(np.mean(circIntensities)) #takes the average of all the pixel intensities within the circle in question
     
     # new code end
