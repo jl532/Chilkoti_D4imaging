@@ -21,6 +21,21 @@ def circleDistanceSorter(circleArray,position,numberOfCircles):
     closestCircles = sorted(zip(dist,pointers),reverse=False)[:numberOfCircles] # sorts and returns the closest numberOfCaptureSpots ([:numberOfCaptureSpots]) circles
     return circleArray[0,pullElementsFromList(closestCircles,1)]
 
+def circlePixelID(circleList): # output pixel locations of all circles within the list,
+    circleIDpointer = 0
+    pixelLocations = []
+    for eachCircle in circleList:
+        xCoordCirc = eachCircle[0] # separates the x and y coordinates of the center of the circles and the circle radius 
+        yCoordCirc = eachCircle[1]
+        radiusCirc = eachCircle[2]
+        for exesInCircle in range(( xCoordCirc - radiusCirc ),( xCoordCirc + radiusCirc )):
+            whyRange = np.sqrt(pow(radiusCirc,2) - pow((exesInCircle - xCoordCirc),2)) #calculates the y-coordinates that define the top and bottom bounds of a slice (at x position) of the circle 
+            discreteWhyRange = int(whyRange) 
+            for whysInCircle in range(( yCoordCirc - discreteWhyRange),( yCoordCirc + discreteWhyRange)):
+                pixelLocations.append([exesInCircle,whysInCircle,circleIDpointer])
+        circleIDpointer = circleIDpointer + 1 
+    return pixelLocations
+                
 
 fileNameInput = "62,5.tif"
 medianBlurArg = 3 # i think this is the sliding window size, it's a moving averager to remove some random noise
@@ -72,7 +87,7 @@ for circleInformation in closestCirclesFromCenter:
     yCoordCirc = circleInformation[1]
     radiusCirc = circleInformation[2]
     cv2.circle(cimg,(xCoordCirc,yCoordCirc),radiusCirc,(0,0,255),1) # plots detection circles / centers in red
-    cv2.circle(cimg,(xCoordCirc,yCoordCirc),1,(0,255,0),1)
+    cv2.circle(cimg,(xCoordCirc,yCoordCirc),1,(0,255,0),2)
     # new code begin
     circIntensities = [] # start a new list of the circle intensities 
     for exesInCircle in range(( xCoordCirc - radiusCirc ),( xCoordCirc + radiusCirc )):
@@ -84,15 +99,21 @@ for circleInformation in closestCirclesFromCenter:
             #print("raw image intensities: " + str(imgRaw[whysInCircle,exesInCircle])+" x: "+str(exesInCircle)+" y: "+str(whysInCircle))
             circIntensities.append(imgRaw[whysInCircle,exesInCircle]) # appends all pixel intensities within the circle in this list
             verificationImg[whysInCircle,exesInCircle]=[0,0,255] # colors red in all pixels within the circle, just for verification
-    captureSpotLocations.append([exesInCircle,whysInCircle]) # appends the locations of all of the pixels within the circle 
+    captureSpotLocations.append([xCoordCirc,yCoordCirc]) # appends the locations of all of the pixels within the circle 
     overallIntensities.append(np.mean(circIntensities)) #takes the average of all the pixel intensities within the circle in question
     
-    # new code end
+#capturePixels = circlePixelID()
+detectionCircles = circleDistanceSorter(circles,[arrayCenterPosX,arrayCenterPosY],len(circles[0,:]))[5:]
+detectionPixels = circlePixelID(detectionCircles)
+for each in detectionPixels:
+    verificationImg[each[1],each[0]] = [0,255,0]
+    
+
 finishedTime = time.time() - startTime
 
 cv2.imshow('Raw Image',imgRaw) # show the original raw image
-cv2.imshow('Raw Image with Superimposed, identified Spots',cimg) # show the raw image with superimposed identified circles
-cv2.imshow('Redded out areas of capture spots',verificationImg)
+cv2.imshow('Raw Image with Superimposed, identified circles',cimg) # show the raw image with superimposed identified circles
+cv2.imshow('Verification image',verificationImg)
 cv2.waitKey(0) # press any key on the image window to close and terminate the program
 cv2.destroyAllWindows()
 
