@@ -12,14 +12,14 @@ def mouseLocationClick(event,x,y,flags,param):
 def pullElementsFromList(datList,argument): # use this when you have a 2d list and want a specific element from each entry
     return [thatSpecificArgument[argument] for thatSpecificArgument in datList]
         
-def circleDistanceSorter(circleArray,position,numberOfCircles):
+def circleDistanceSorter(circleArray,position):
     dist = []
     for i in circleArray[0,:]: # calculates the distance from each circle to the center of the array
         distanceFromCenter = np.sqrt( pow((i[0] - position[0]),2) + pow((i[1] - position[1]),2) )
         dist.append(distanceFromCenter) # stores those values into an array
     pointers = range(len(circles[0,:])) # makes a pointer array that matches the pointers in the "circle" list
-    closestCircles = sorted(zip(dist,pointers),reverse=False)[:numberOfCircles] # sorts and returns the closest numberOfCaptureSpots ([:numberOfCaptureSpots]) circles
-    return circleArray[0,pullElementsFromList(closestCircles,1)]
+    closestCircles = sorted(zip(dist,pointers),reverse=False) # sorts and returns the sorted list [distance,pointers]
+    return circleArray[0,pullElementsFromList(closestCircles,1)]  # returns the circle List entries sorted by distance using the pointers to the circle List
 
 def circlePixelID(circleList): # output pixel locations of all circles within the list,
     circleIDpointer = 0
@@ -27,14 +27,35 @@ def circlePixelID(circleList): # output pixel locations of all circles within th
     for eachCircle in circleList:
         xCoordCirc = eachCircle[0] # separates the x and y coordinates of the center of the circles and the circle radius 
         yCoordCirc = eachCircle[1]
-        radiusCirc = eachCircle[2]
+        radiusCirc = eachCircle[2] + 2
         for exesInCircle in range(( xCoordCirc - radiusCirc ),( xCoordCirc + radiusCirc )):
             whyRange = np.sqrt(pow(radiusCirc,2) - pow((exesInCircle - xCoordCirc),2)) #calculates the y-coordinates that define the top and bottom bounds of a slice (at x position) of the circle 
             discreteWhyRange = int(whyRange) 
             for whysInCircle in range(( yCoordCirc - discreteWhyRange),( yCoordCirc + discreteWhyRange)):
-                pixelLocations.append([exesInCircle,whysInCircle,circleIDpointer])
+                pixelLocations.append([exesInCircle,whysInCircle, radiusCirc, circleIDpointer])
         circleIDpointer = circleIDpointer + 1 
     return pixelLocations
+
+def rectangleBackgroundAreaDefiner(capturePixelInformation):
+    maxRadius = max(pullElementsFromList(capturePixelInformation,2))
+    smolRectRight = max(pullElementsFromList(capturePixelInformation,0)) + int(maxRadius * 1.2)
+    smolRectLeft = min(pullElementsFromList(capturePixelInformation,0)) - int(maxRadius * 1.2)
+    smolRectBot = max(pullElementsFromList(capturePixelInformation,1)) + int(maxRadius * 1.2)
+    smolRectTop = min(pullElementsFromList(capturePixelInformation,1)) - int(maxRadius * 1.2)
+    
+    bigRectRight = smolRectRight + int(maxRadius * 3)
+    bigRectLeft = smolRectLeft - int(maxRadius * 3)
+    bigRectBot = smolRectBot + int(maxRadius * 3)
+    bigRectTop = smolRectTop - int(maxRadius * 3)
+    
+    backgroundPixels = []
+    for bgExes in range(bigRectLeft,bigRectRight):
+        for bgWhys in range(bigRectTop,bigRectBot):
+            if ((bgWhys > smolRectBot) or (bgWhys < smolRectTop)):
+                backgroundPixels.append([bgExes,bgWhys])
+            elif ((bgExes > smolRectRight) or (bgExes < smolRectLeft)):
+                backgroundPixels.append([bgExes,bgWhys])
+    return backgroundPixels
                 
 
 fileNameInput = "62,5.tif"
@@ -78,36 +99,21 @@ for i in circles[0,:]:
 cv2.circle(cimg,(arrayCenterPosX,arrayCenterPosY),5,(255,0,0),3)
 
 # compare the distance from the center and categorize which ones are closest (5 for now)
-closestCirclesFromCenter = circleDistanceSorter(circles,[arrayCenterPosX,arrayCenterPosY],5)
+captureCircles = circleDistanceSorter(circles,[arrayCenterPosX,arrayCenterPosY])[:numberOfCaptureSpots]
+capturePixels = circlePixelID(captureCircles)
+verificationImg[pullElementsFromList(capturePixels,1),pullElementsFromList(capturePixels,0)] = [0,0,250]
+backgroundPixels = rectangleBackgroundAreaDefiner(capturePixels)
+verificationImg[pullElementsFromList(backgroundPixels,1),pullElementsFromList(backgroundPixels,0)] = [255,0,0]
 
-overallIntensities = []
-captureSpotLocations = []
-for circleInformation in closestCirclesFromCenter:
-    xCoordCirc = circleInformation[0] # separates the x and y coordinates of the center of the circles and the circle radius 
-    yCoordCirc = circleInformation[1]
-    radiusCirc = circleInformation[2]
-    cv2.circle(cimg,(xCoordCirc,yCoordCirc),radiusCirc,(0,0,255),1) # plots detection circles / centers in red
-    cv2.circle(cimg,(xCoordCirc,yCoordCirc),1,(0,255,0),2)
-    # new code begin
-    circIntensities = [] # start a new list of the circle intensities 
-    for exesInCircle in range(( xCoordCirc - radiusCirc ),( xCoordCirc + radiusCirc )):
-        # for each x value in each circle
-        whyRange = np.sqrt(pow(radiusCirc,2) - pow((exesInCircle - xCoordCirc),2)) #calculates the y-coordinates that define the top and bottom bounds of a slice (at x position) of the circle 
-        discreteWhyRange = int(whyRange) 
-        #print("at x-pos of " + str(exesInCircle) +" with calculated y-range of " + str(discreteWhyRange))
-        for whysInCircle in range(( yCoordCirc - discreteWhyRange),( yCoordCirc + discreteWhyRange)):
-            #print("raw image intensities: " + str(imgRaw[whysInCircle,exesInCircle])+" x: "+str(exesInCircle)+" y: "+str(whysInCircle))
-            circIntensities.append(imgRaw[whysInCircle,exesInCircle]) # appends all pixel intensities within the circle in this list
-            #verificationImg[whysInCircle,exesInCircle]=[0,0,255] # colors red in all pixels within the circle, just for verification
-    captureSpotLocations.append([xCoordCirc,yCoordCirc]) # appends the locations of all of the pixels within the circle 
-    overallIntensities.append(np.mean(circIntensities)) #takes the average of all the pixel intensities within the circle in question
-    
-capturePixels = circlePixelID(closestCirclesFromCenter)
-verificationImg[pullElementsFromList(capturePixels,1),pullElementsFromList(capturePixels,0)] = [255,0,0]
+captureIntensities= [ imgRaw[pullElementsFromList(capturePixels,1),pullElementsFromList(capturePixels,0)], pullElementsFromList(capturePixels,3) ]
 
-detectionCircles = circleDistanceSorter(circles,[arrayCenterPosX,arrayCenterPosY],len(circles[0,:]))[5:]
+
+
+detectionCircles = circleDistanceSorter(circles,[arrayCenterPosX,arrayCenterPosY])[numberOfCaptureSpots:]
 detectionPixels = circlePixelID(detectionCircles)
 verificationImg[pullElementsFromList(detectionPixels,1),pullElementsFromList(detectionPixels,0)] = [0,255,0]
+
+
 finishedTime = time.time() - startTime
 
 cv2.imshow('Raw Image',imgRaw) # show the original raw image
@@ -117,7 +123,6 @@ cv2.waitKey(0) # press any key on the image window to close and terminate the pr
 cv2.destroyAllWindows()
 
 print("done, with " + str(circleCount) + " circles identified in " + str(finishedTime) + " seconds") # prints out the number of identified circles for debugging purposes.
-print(str(overallIntensities))
 
 
 
