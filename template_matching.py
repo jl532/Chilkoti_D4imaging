@@ -27,25 +27,6 @@ ds_template = cv2.pyrDown(template)
 w, h = ds_template.shape[::-1]
 res = cv2.matchTemplate(ds_img_gray,ds_template,cv2.TM_CCORR_NORMED)  ## [y, x, correlation value]
 
-#storeArrays=[]    
-#for exes in range(len(res[0,:])):
-#    for whys in range(len(res[0,:])):
-#        if(len(storeArrays)<24):
-#            storeArrays.append([exes,whys,res[exes,whys]])
-#        else:
-#            index = 0
-#            for eachStoredArray in storeArrays:
-#                if res[exes,whys] > res[eachStoredArray[0],eachStoredArray[1]]:
-#                    storeArrays[index] = [exes,whys,res[exes,whys]]
-#                index = index +1
-#                break;
-#
-#print("LETS FICKING GO " + str(storeArrays))
-        
-#indices = res.argpartition(res.size - numberOfArrays, axis= None)[:numberOfArrays]
-#tmExes, tmWhys =  np.unravel_index(indices, res.shape)
-#array_positions = [tmExes[::-1], tmWhys[::-1]]
-#print("array positions are at: " + str(array_positions))
 
 threshold = 0.6  #previously .7
 loc = np.where( res >= threshold) # [Y Y Y Y Y Y] in first row [X X X X X] in second row 
@@ -85,77 +66,6 @@ for eachRawPotArray in rawPotentialArrays:
 for eachBestCitizen in bestCitizens:
     cv2.rectangle( ds_img_rgb , (eachBestCitizen[1][0], eachBestCitizen[1][1]), (eachBestCitizen[1][0] + w, eachBestCitizen[1][1] + h), (0,0,255),2)
     
-        
-# sort by arrayIterator
-
-# sortedArraysByHood = sorted(stagedManyArrays, key = itemgetter(2))
-
-
-    
-    
-
-#
-#    else:
-#        if ((eachRawPotArray[0] > neighbRectLef) and (eachRawPotArray[0] < neighbRectRit)):
-#            #print("within x bounds: " + str(eachTMmatch))
-#            if ((eachRawPotArray[1] > neighbRectTop) and (eachRawPotArray[1] < neighbRectBot)):
-#                #print("within y bounds: " + str(eachTMmatch))
-#                stagedManyArrays.append([ res[eachRawPotArray[1],eachRawPotArray[0]], [eachRawPotArray[0],eachRawPotArray[1]], arrayIterator])
-#                if (neighbRectLef > eachRawPotArray[0] - neighborRadius):
-#                    neighbRectLef = eachRawPotArray[0] - neighborRadius
-#                if (neighbRectRit < eachRawPotArray[0] + neighborRadius):
-#                    neighbRectRit = eachRawPotArray[0] + neighborRadius
-#                if (neighbRectTop > eachRawPotArray[1] - neighborRadius):
-#                    neighbRectTop = eachRawPotArray[1] - neighborRadius
-#                if (neighbRectBot < eachRawPotArray[1] + neighborRadius):
-#                    neighbRectBot = eachRawPotArray[1] + neighborRadius
-#        else:
-#            # flush previous values out
-#            #print("finished Array #" + str(arrayIterator))
-#            highestResInNeighborhood=sorted(stagedManyArrays, reverse=True)[0]
-#            bestCitizens.append(highestResInNeighborhood)
-#            arrayIterator = arrayIterator + 1
-#            stagedManyArrays = []
-#            stagedManyArrays.append([ res[eachRawPotArray[1],eachRawPotArray[0]], [eachRawPotArray[0],eachRawPotArray[1]], arrayIterator])
-#            neighbRectLef = eachRawPotArray[0] - neighborRadius
-#            neighbRectRit = eachRawPotArray[0] + neighborRadius
-#            neighbRectTop = eachRawPotArray[1] - neighborRadius
-#            neighbRectBot = eachRawPotArray[1] + neighborRadius
-#print(str(bestCitizens))   
-#print("arrays found: " + str(arrayIterator))
-#
-#arrayNumber = 0
-#
-#
-#listOfBestArrays = []
-#currentListOfManyArrays = []
-#for eachTMmatch in listOfManyArrays:
-#    #print("testing bounds: " + str(eachTMmatch))
-#    if ((eachTMmatch[0] > nhLef) and (eachTMmatch[0] < nhRit)):
-#        #print("within x bounds: " + str(eachTMmatch))
-#        if ((eachTMmatch[1] > nhTop) and (eachTMmatch[1] < nhBot)):
-#            #print("within y bounds: " + str(eachTMmatch))
-#            currentListOfManyArrays.append([res[eachTMmatch[1],eachTMmatch[0]],eachTMmatch[0], eachTMmatch[1], arrayNumber])
-#            if (nhLef > eachTMmatch[0] - neighborRadius):
-#                nhLef = eachTMmatch[0] - neighborRadius
-#            if (nhRit < eachTMmatch[0] + neighborRadius):
-#                nhRit = eachTMmatch[0] + neighborRadius
-#            if (nhTop > eachTMmatch[1] - neighborRadius):
-#                nhTop = eachTMmatch[1] - neighborRadius
-#            if (nhBot < eachTMmatch[1] + neighborRadius):
-#                nhBot = eachTMmatch[1] + neighborRadius
-#    else:
-#        arrayNumber = arrayNumber + 1
-#        bestFitTM=sorted(currentListOfManyArrays, reverse=True)[0]
-#        listOfBestArrays.append(bestFitTM)
-#        currentListOfManyArrays = []
-#        print(bestFitTM)
-#        currentListOfManyArrays.append([res[eachTMmatch[1],eachTMmatch[0]],eachTMmatch[0], eachTMmatch[1],arrayNumber])
-#        
-#        nhLef = eachTMmatch[0] - neighborRadius
-#        nhRit = eachTMmatch[0] + neighborRadius
-#        nhTop = eachTMmatch[1] - neighborRadius
-#        nhBot = eachTMmatch[1] + neighborRadius
     
 finishedTime = time.time() - startTime
 
