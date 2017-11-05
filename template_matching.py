@@ -30,7 +30,7 @@ res = cv2.matchTemplate(ds_img_gray,ds_template,cv2.TM_CCORR_NORMED)  ## [y, x, 
 
 threshold = 0.6  #previously .7
 loc = np.where( res >= threshold) # [Y Y Y Y Y Y] in first row [X X X X X] in second row 
-ArrayLocations = []
+
 neighborRadius = max(w,h)
 rawPotentialArrays = zip(*loc[::-1]) # [X, Y] many many entries
 
@@ -52,7 +52,7 @@ for eachRawPotArray in rawPotentialArrays:
                     #print(str([eachRawPotArray[0],eachRawPotArray[1]]) + " close to " + str([eachStagedArray[1][0], eachStagedArray[1][1]]))
                     storageSpace = [res[eachRawPotArray[1],eachRawPotArray[0]], [eachRawPotArray[0],eachRawPotArray[1]], eachStagedArray[2]]
                     if (res[eachRawPotArray[1],eachRawPotArray[0]] > bestCitizens[eachStagedArray[2]][0]):
-                        bestCitizens[eachStagedArray[2]] = [ res[eachRawPotArray[1],eachRawPotArray[0]], [eachRawPotArray[0],eachRawPotArray[1]] , arrayIterator]
+                        bestCitizens[eachStagedArray[2]] = [ res[eachRawPotArray[1],eachRawPotArray[0]], [eachRawPotArray[0],eachRawPotArray[1]] , eachStagedArray[2]]
         if (len(storageSpace) ==  0 ):
             #print(str([eachRawPotArray[0],eachRawPotArray[1]]) + " NOT close to " + str([eachStagedArray[1][0], eachStagedArray[1][1]]))
             arrayIterator = arrayIterator + 1
@@ -61,12 +61,12 @@ for eachRawPotArray in rawPotentialArrays:
                 bestCitizens[arrayIterator] = [ res[eachRawPotArray[1],eachRawPotArray[0]], [eachRawPotArray[0],eachRawPotArray[1]] , arrayIterator]
         stagedManyArrays.append(storageSpace)
         
-#print(bestCitizens)
+detectedNumberOfArrays = len(bestCitizens)
 
+# verification rectangles
 for eachBestCitizen in bestCitizens:
     cv2.rectangle( ds_img_rgb , (eachBestCitizen[1][0], eachBestCitizen[1][1]), (eachBestCitizen[1][0] + w, eachBestCitizen[1][1] + h), (0,0,255),2)
-    
-    
+
 finishedTime = time.time() - startTime
 
 print("time to process the full image: " + str(finishedTime))

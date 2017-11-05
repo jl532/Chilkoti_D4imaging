@@ -139,7 +139,6 @@ for eachArray in range(int(numberOfArrays)):
                 print("using previously analyzed arrays within image to estimate blank capture spot locations")
                 sumCaptureCoordinates = []
                 avgCaptureCoordinates = []
-                for whatever in range(int(numberOfCaptureSpots)):
                     sumCaptureCoordinates.append([0,0,0])
                     avgCaptureCoordinates.append([0,0,0])
                 
