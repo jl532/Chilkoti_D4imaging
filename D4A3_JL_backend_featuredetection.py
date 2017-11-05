@@ -50,10 +50,11 @@ def circlePixelID(circleList): # output pixel locations of all circles within th
     circleIDpointer = 0
     pixelLocations = []
     for eachCircle in circleList:
-        print(eachCircle)
-        xCoordCirc = eachCircle[0] # separates the x and y coordinates of the center of the circles and the circle radius 
-        yCoordCirc = eachCircle[1]
-        radiusCirc = eachCircle[2] + 2
+#        print("this circle is being analyzed in circle pixel ID")
+#        print(eachCircle)
+        xCoordCirc = eachCircle[0][0] # separates the x and y coordinates of the center of the circles and the circle radius 
+        yCoordCirc = eachCircle[0][1]
+        radiusCirc = eachCircle[0][2] + 2
         for exesInCircle in range(( xCoordCirc - radiusCirc ),( xCoordCirc + radiusCirc )):
             whyRange = np.sqrt(pow(radiusCirc,2) - pow((exesInCircle - xCoordCirc),2)) #calculates the y-coordinates that define the top and bottom bounds of a slice (at x position) of the circle 
             discreteWhyRange = int(whyRange) 
@@ -83,6 +84,41 @@ def rectangleBackgroundAreaDefiner(capturePixelInformation):
                 backgroundPixels.append([bgExes,bgWhys])
     return backgroundPixels
 
+def blankOrLowArrayCheck(listOfD4arrays,capCircles):
+    capLocations = []
+    if len(listOfD4arrays) > 0:
+        for whatever in capCircles:
+            capLocations.append([0,0,0])
+        for eachPreviousD4Array in listOfD4arrays:
+            previousCaptCircles = eachPreviousD4Array.returnCaptureCircleInfo()
+            circleIterator = 0
+            for eachCapCircle in previousCaptCircles:
+                capLocations[circleIterator][0] = capLocations[circleIterator][0] + eachCapCircle[0]
+                capLocations[circleIterator][1] = capLocations[circleIterator][1] + eachCapCircle[1]
+                capLocations[circleIterator][2] = capLocations[circleIterator][2] + eachCapCircle[2]
+                circleIterator = circleIterator + 1
+                
+        for eachIterator in range(len(capLocations)):
+            capLocations[eachIterator][0] = capLocations[eachIterator][0] / len(listOfD4arrays)
+            capLocations[eachIterator][1] = capLocations[eachIterator][1] / len(listOfD4arrays)
+            capLocations[eachIterator][2] = capLocations[eachIterator][2] / len(listOfD4arrays)
+            
+        print('average of past capture spots here:')
+        print(capLocations)
+        circleIterator = 0
+        maxRadius = 20
+        for eachLocation in capLocations:
+            if (abs(eachLocation[0] - capCircles[circleIterator][0]) > maxRadius) or (abs(eachLocation[1] - capCircles[circleIterator][1]) > maxRadius):
+                capCircles[circleIterator] = eachLocation
+                print("blank detected, replacing ")
+                print(capCircles[circleIterator])
+                print("with")
+                print(eachLocation)
+            circleIterator = circleIterator + 1
+            return capCircles
+    else:
+        return capCircles
+
 class D4Array:
     "a class that carries all of the information needed for each Array"
     def __init__(self,analyte,concentration,intensities,background,d4fileName,d4coordinates,centerOfArrayCoordinates, captCircles):
@@ -99,6 +135,8 @@ class D4Array:
     def displayAllInfo(self):
         print(self.analyte + " " + str(self.concentration)+ " " +str(self.intensities)+ " " +str(self.stdev)+ " "+str(self.background))
         print(self.d4fileName+" "+str(self.d4coordinates)+" "+str(self.centerOfArrayCoordinates)+" "+str(self.captCircles))
+    def returnCaptureCircleInfo(self):
+        return self.captCircles
                 
 
 fileIObool = True
@@ -217,7 +255,8 @@ for eachArray in bestCitizens:
         
         captureCircles = circleDistanceSorter(circles,[arrayCenterPosX,arrayCenterPosY],numberOfCaptureSpots)            
         
-        
+        captureCircles = blankOrLowArrayCheck(listD4Arrays, captureCircles)
+            
         capturePixels = circlePixelID(captureCircles)
         verifyImg_pixels[pullElementsFromList(capturePixels,1),pullElementsFromList(capturePixels,0)] = [0,0,255]
         
