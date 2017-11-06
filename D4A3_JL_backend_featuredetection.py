@@ -34,16 +34,26 @@ def circleDistanceSorter(circleArray,position,numberofCaptSpots):
             #print(str(eachCircle) + " added")
         else:
             rowCirclesSortedByX = sorted(rowCircleList, key = itemgetter(0))
-            fullySortedList.append(rowCirclesSortedByX)
+            fullySortedList = fullySortedList + rowCirclesSortedByX
             #print(str(rowCircleList) + " flushed")
             rowCircleList = []
             yCoordinateRowOfCircles = eachCircle[1]
             rowCircleList.append(eachCircle)
     rowCirclesSortedByX = sorted(rowCircleList, key = itemgetter(0))
-    fullySortedList.append(rowCirclesSortedByX)
+    fullySortedList = fullySortedList + rowCirclesSortedByX
     #print(str(rowCircleList) + " flushed")
     
-    #print(fullySortedList)
+    print(fullySortedList)
+    
+#    # need to remove excess nested lists.
+#    finalSortedList = []
+#    print(fullySortedList)
+#    for listIterator in range(numberofCaptSpots):
+#        print(fullySortedList[listIterator][0])
+#        finalSortedList.append(fullySortedList[listIterator][0])
+#    #print("removed excess nested lists")
+    #print(finalSortedList)
+        
     return fullySortedList
 
 def circlePixelID(circleList): # output pixel locations of all circles within the list,
@@ -52,9 +62,9 @@ def circlePixelID(circleList): # output pixel locations of all circles within th
     for eachCircle in circleList:
 #        print("this circle is being analyzed in circle pixel ID")
 #        print(eachCircle)
-        xCoordCirc = eachCircle[0][0] # separates the x and y coordinates of the center of the circles and the circle radius 
-        yCoordCirc = eachCircle[0][1]
-        radiusCirc = eachCircle[0][2] + 2
+        xCoordCirc = eachCircle[0] # separates the x and y coordinates of the center of the circles and the circle radius 
+        yCoordCirc = eachCircle[1]
+        radiusCirc = eachCircle[2] + 2
         for exesInCircle in range(( xCoordCirc - radiusCirc ),( xCoordCirc + radiusCirc )):
             whyRange = np.sqrt(pow(radiusCirc,2) - pow((exesInCircle - xCoordCirc),2)) #calculates the y-coordinates that define the top and bottom bounds of a slice (at x position) of the circle 
             discreteWhyRange = int(whyRange) 
@@ -84,15 +94,20 @@ def rectangleBackgroundAreaDefiner(capturePixelInformation):
                 backgroundPixels.append([bgExes,bgWhys])
     return backgroundPixels
 
-def blankOrLowArrayCheck(listOfD4arrays,capCircles):
+def blankOrLowArrayCheck(listOfD4arrays,capCircles, numberOfCaptSpots):
     capLocations = []
+    #print(capCircles)
     if len(listOfD4arrays) > 0:
-        for whatever in capCircles:
+        for whatever in range(numberOfCaptSpots):
             capLocations.append([0,0,0])
+        #print(capLocations)
+            
         for eachPreviousD4Array in listOfD4arrays:
             previousCaptCircles = eachPreviousD4Array.returnCaptureCircleInfo()
             circleIterator = 0
             for eachCapCircle in previousCaptCircles:
+                #print(eachCapCircle[0])
+                #print(circleIterator)
                 capLocations[circleIterator][0] = capLocations[circleIterator][0] + eachCapCircle[0]
                 capLocations[circleIterator][1] = capLocations[circleIterator][1] + eachCapCircle[1]
                 capLocations[circleIterator][2] = capLocations[circleIterator][2] + eachCapCircle[2]
@@ -107,7 +122,7 @@ def blankOrLowArrayCheck(listOfD4arrays,capCircles):
         print(capLocations)
         circleIterator = 0
         maxRadius = 20
-        for eachLocation in capLocations:
+        for eachLocation in capLocations:            
             if (abs(eachLocation[0] - capCircles[circleIterator][0]) > maxRadius) or (abs(eachLocation[1] - capCircles[circleIterator][1]) > maxRadius):
                 capCircles[circleIterator] = eachLocation
                 print("blank detected, replacing ")
@@ -115,7 +130,7 @@ def blankOrLowArrayCheck(listOfD4arrays,capCircles):
                 print("with")
                 print(eachLocation)
             circleIterator = circleIterator + 1
-            return capCircles
+        return capCircles
     else:
         return capCircles
 
@@ -255,7 +270,7 @@ for eachArray in bestCitizens:
         
         captureCircles = circleDistanceSorter(circles,[arrayCenterPosX,arrayCenterPosY],numberOfCaptureSpots)            
         
-        captureCircles = blankOrLowArrayCheck(listD4Arrays, captureCircles)
+        captureCircles = blankOrLowArrayCheck(listD4Arrays, captureCircles, numberOfCaptureSpots)
             
         capturePixels = circlePixelID(captureCircles)
         verifyImg_pixels[pullElementsFromList(capturePixels,1),pullElementsFromList(capturePixels,0)] = [0,0,255]
@@ -288,16 +303,19 @@ for eachArray in bestCitizens:
         cv2.imshow('Verification image',verifyImg_pixels)
         pressedKey = cv2.waitKey(0) 
         cv2.destroyAllWindows()
-        if keyPress == ord("b"):
+        if pressedKey == ord("b"):
             print("redoing singleArrayIDBool Loop")
-        if keyPress == ord("x"):
-            print("singleArrayIDBool Loop complete")
+        if pressedKey == ord("x"):
+            print("singleArrayIDBool Loop complete " + str(len(listD4Arrays)))
             singleArrayIDBool = False
             d4Concentration = d4Concentration / 2.0
             listD4Arrays.append(d4ArrayEach)
-        if keyPress == ord("q"):
+        if pressedKey == ord("q"):
             print("debug loop exit")
             sys.exit()
+
+# now do CSV output and plotting....
+
     
     
     
