@@ -2,7 +2,9 @@
 import numpy as np 
 import cv2
 import sys
+import csv
 from operator import itemgetter
+
 
 arrayCoords = []
 def mouseLocationClick(event,x,y,flags,param):
@@ -42,18 +44,7 @@ def circleDistanceSorter(circleArray,position,numberofCaptSpots):
     rowCirclesSortedByX = sorted(rowCircleList, key = itemgetter(0))
     fullySortedList = fullySortedList + rowCirclesSortedByX
     #print(str(rowCircleList) + " flushed")
-    
-    print(fullySortedList)
-    
-#    # need to remove excess nested lists.
-#    finalSortedList = []
-#    print(fullySortedList)
-#    for listIterator in range(numberofCaptSpots):
-#        print(fullySortedList[listIterator][0])
-#        finalSortedList.append(fullySortedList[listIterator][0])
-#    #print("removed excess nested lists")
-    #print(finalSortedList)
-        
+#    print(fullySortedList)        
     return fullySortedList
 
 def circlePixelID(circleList): # output pixel locations of all circles within the list,
@@ -118,17 +109,17 @@ def blankOrLowArrayCheck(listOfD4arrays,capCircles, numberOfCaptSpots):
             capLocations[eachIterator][1] = capLocations[eachIterator][1] / len(listOfD4arrays)
             capLocations[eachIterator][2] = capLocations[eachIterator][2] / len(listOfD4arrays)
             
-        print('average of past capture spots here:')
-        print(capLocations)
+#        print('average of past capture spots here:')
+#        print(capLocations)
         circleIterator = 0
         maxRadius = 20
         for eachLocation in capLocations:            
             if (abs(eachLocation[0] - capCircles[circleIterator][0]) > maxRadius) or (abs(eachLocation[1] - capCircles[circleIterator][1]) > maxRadius):
                 capCircles[circleIterator] = eachLocation
-                print("blank detected, replacing ")
-                print(capCircles[circleIterator])
-                print("with")
-                print(eachLocation)
+#                print("blank detected, replacing ")
+#                print(capCircles[circleIterator])
+#                print("with")
+#                print(eachLocation)
             circleIterator = circleIterator + 1
         return capCircles
     else:
@@ -157,9 +148,10 @@ class D4Array:
 fileIObool = True
 while fileIObool:
     # prompt user for file name in same directory as the python script LeptinGood.tif
-    fileName = "LeptinGood.tif" #raw_input("Enter the file name with the .tif extension:  ")
+    inputFileName = "LeptinGood.tif" #raw_input("Enter the input image file name with the .tif extension:  ")
     # import .tif file 
-    imgRaw = cv2.imread(str(fileName),0)
+    outputCSVFileName = "testOutput.csv" #raw_input("Enter the output csv file name with the .csv extension:  ")
+    imgRaw = cv2.imread(str(inputFileName),0)
     # verify file identity
 #    cv2.namedWindow('Image: ' + fileName +  ' uploaded to program',cv2.WINDOW_NORMAL) # make a named window'
 #    cv2.imshow('Image: ' + fileName +  ' uploaded to program',imgRaw)
@@ -293,29 +285,43 @@ for eachArray in bestCitizens:
         for eachCircle in separatedCaptureIntensities:
             avgCircleIntensities.append(np.mean(eachCircle))
             
-        d4ArrayEach = D4Array(IOanalyte, d4Concentration, avgCircleIntensities, avgBackground, fileName, eachArray[1], [arrayCenterPosX, arrayCenterPosY], captureCircles)
+        d4ArrayEach = D4Array(IOanalyte, d4Concentration, avgCircleIntensities, avgBackground, inputFileName, eachArray[1], [arrayCenterPosX, arrayCenterPosY], captureCircles)
             
 #        detectionCircles = circleDistanceSorter(circles,[arrayCenterPosX,arrayCenterPosY])[numberOfCaptureSpots:]
 #        verifyImg_pixels[pullElementsFromList(detectionPixels,1),pullElementsFromList(detectionPixels,0)] = [0,255,0]
         
-        cv2.imshow('Raw Image',subImg) # show the original raw image
-        cv2.imshow('Raw Image with Superimposed, identified circles', verifyImg_circles) # show the raw image with superimposed identified circles
-        cv2.imshow('Verification image',verifyImg_pixels)
-        pressedKey = cv2.waitKey(0) 
-        cv2.destroyAllWindows()
-        if pressedKey == ord("b"):
-            print("redoing singleArrayIDBool Loop")
-        if pressedKey == ord("x"):
-            print("singleArrayIDBool Loop complete " + str(len(listD4Arrays)))
-            singleArrayIDBool = False
-            d4Concentration = d4Concentration / 2.0
-            listD4Arrays.append(d4ArrayEach)
-        if pressedKey == ord("q"):
-            print("debug loop exit")
-            sys.exit()
+#        cv2.imshow('Raw Image',subImg) # show the original raw image
+#        cv2.imshow('Raw Image with Superimposed, identified circles', verifyImg_circles) # show the raw image with superimposed identified circles
+#        cv2.imshow('Verification image',verifyImg_pixels)
+#        pressedKey = cv2.waitKey(0) 
+#        cv2.destroyAllWindows()
+#        if pressedKey == ord("b"):
+#            print("redoing singleArrayIDBool Loop")
+#        if pressedKey == ord("x"):
+#            print("singleArrayIDBool Loop complete " + str(len(listD4Arrays)))
+        singleArrayIDBool = False
+        d4Concentration = d4Concentration / 2.0
+        listD4Arrays.append(d4ArrayEach)
+#        if pressedKey == ord("q"):
+#            print("debug loop exit")
+#            sys.exit()
 
 # now do CSV output and plotting....
+with open(outputCSVFileName, 'wb' ) as outputCSV:
+    csvWriter = csv.writer(outputCSV, delimiter= ",", quotechar = "|" , quoting = csv.QUOTE_MINIMAL)
+    for eachArray in listD4Arrays:
+#        line = ""
+#        for eachIntensity in eachArray.intensities:
+#            line = line + str(eachIntensity) + ","
+#        line = line + str(np.mean(eachArray.intensities)) + "," + str(eachArray.stdev)
+        
+        csvWriter.writerow( eachArray.intensities + [eachArray.analyte] + [eachArray.concentration] +  [np.mean(eachArray.intensities)] + [eachArray.stdev] ) 
+        
+# plot this stuff
+print("program terminated")
 
+        
+        
     
     
     
