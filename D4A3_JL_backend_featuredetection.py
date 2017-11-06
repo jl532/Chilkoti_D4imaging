@@ -5,6 +5,12 @@ import sys
 import csv
 from operator import itemgetter
 
+# for plotting, import these things
+import numpy as np
+import matplotlib.pyplot as plt
+import pylab # for sigmoid fit
+from scipy.optimize import curve_fit # for sigmoid fit
+
 
 arrayCoords = []
 def mouseLocationClick(event,x,y,flags,param):
@@ -169,10 +175,11 @@ while fileIObool:
 # user parameters to be used later:
 userPromptBool = True
 while(userPromptBool):
-    IOanalyte = "lorem ipsum dolor" #raw_input("What is the analyte being used in this assay? Just add more in with / separating each:  ")
+    IOanalyte = "Leptin" #raw_input("What is the analyte being used in this assay? Just add more in with / separating each:  ")
     numberOfArrays = 24   #raw_input("How many total Arrays are there in this image?  ")
     startingConcentration = 500 #raw_input("What is the starting concentration in ng/mL?   ")
     numberOfCaptureSpots = 5 #raw_input("How many capture spots are there in each Array?  ")
+    numberOfBlanks = 5 #raw_input("How many blanks are there in this image?  ")
     
     print(IOanalyte + " is/are the selected analyte for this slide")
     print(str(numberOfArrays) + " is the number of arrays on this image")
@@ -310,14 +317,83 @@ for eachArray in bestCitizens:
 with open(outputCSVFileName, 'wb' ) as outputCSV:
     csvWriter = csv.writer(outputCSV, delimiter= ",", quotechar = "|" , quoting = csv.QUOTE_MINIMAL)
     for eachArray in listD4Arrays:
-#        line = ""
-#        for eachIntensity in eachArray.intensities:
-#            line = line + str(eachIntensity) + ","
-#        line = line + str(np.mean(eachArray.intensities)) + "," + str(eachArray.stdev)
-        
         csvWriter.writerow( eachArray.intensities + [eachArray.analyte] + [eachArray.concentration] +  [np.mean(eachArray.intensities)] + [eachArray.stdev] ) 
         
 # plot this stuff
+# pull avg intensity data out of listD4Arrays
+intensityData = []
+stdevData = []
+backgroundData = []
+arrayConcentrations = []
+for eachArray in listD4Arrays:
+    intensityData.append(np.mean(eachArray.intensities))
+    stdevData.append(eachArray.stdev)
+    backgroundData.append(eachArray.background)
+    arrayConcentrations.append(eachArray.concentration)
+
+def plotStdCurve(x, y):
+    plt.loglog(x, y, 'ko')
+    return
+
+# used by fitData function
+def sigmoid(x, x0, k):
+     y = 1 / (1 + np.exp(-k*(x-x0)))
+     return y
+
+# used by fitData function
+# normalizes an array to range from 0 to 1
+def normalize(array):
+    mindata = min(array)
+    maxdata = max(array)
+    for el in np.nditer(array, op_flags=['readwrite']):
+        el[...] = (el - mindata) / (maxdata - mindata)
+    return array
+
+# sample script @ https://gist.github.com/andrewgiessel/5684769
+def fitData(x, y, blanks):
+    xdata = np.log10(x[0:(len(x)-blanks)])
+    ydata = np.log10(y[0:(len(y)-blanks)])
+    
+    # normalize ydata range (0 to 1)
+    ydata = normalize(ydata)
+    
+    popt, pcov = curve_fit(sigmoid, xdata, ydata)
+    #print popt
+    
+    x = np.linspace(min(xdata), max(xdata), 50)
+    y = sigmoid(x, *popt)
+    
+    pylab.plot(xdata, ydata, 'o', label='data')
+    pylab.plot(x,y, label='fit')
+    pylab.ylim(-0.05, 1.05)
+    pylab.legend(loc='best')
+    pylab.title(IOanalyte + " data plot with 3-factor sigmoid fit")
+    pylab.xlabel("log10'd concentrations in ng/mL")
+    pylab.ylabel("normalized intensities")
+    pylab.savefig("testOutputPlotted.png")
+    pylab.show()
+    
+    return
+
+def limitOfBlank_intensity(concs, intensities, stdevs, numBlanks):
+    # Armbruster & Pry formula: LoB = meanBlank + 1.645(sdBlank)
+    blankIntensities = intensities[len(intensities)-numBlanks : len(intensities)]
+    meanBlank = np.mean(blankIntensities)
+    sdBlank = np.std(blankIntensities)
+    lob_intensity = meanBlank + 1.645*sdBlank
+    return lob_intensity
+
+def limitOfDetection_intensity(concs, intensities, stdevs, numBlanks, lob_intensity):
+    # Arumbruster & Pry formula: LoD = LoB + 1.645(SD low concentration sample)
+    lowconcIntensities = intensities[len(intensities)-numBlanks-3 : len(intensities)] # -3 term indicates that lowest concentration samples considered are the three samples nearest to the blanks
+    lod_intensity = lob_intensity + 1.645*(np.std(lowconcIntensities))
+    return lod_intensity
+
+#plotStdCurve(concs, values)
+fitData(arrayConcentrations, intensityData, numberOfBlanks) 
+#lob_intensity = limitOfBlank_intensity(arrayConcentrations, intensityData, stdevData, stdevData)
+#lod_intensity = limitOfDetection_intensity(arrayConcentrations, intensityData, stdevData, numberOfBlanks, lob_intensity)
+        
 print("program terminated")
 
         
