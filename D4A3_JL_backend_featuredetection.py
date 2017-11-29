@@ -91,7 +91,7 @@ def rectangleBackgroundAreaDefiner(capturePixelInformation):
                 backgroundPixels.append([bgExes,bgWhys])
     return backgroundPixels
 
-def blankOrLowArrayCheck(listOfD4arrays,capCircles, numberOfCaptSpots):
+def blankOrLowArrayCheck(listOfD4arrays,capCircles, numberOfCaptSpots): # oinly necessary if you use this with multiple arrays in one image.
     capLocations = []
     #print(capCircles)
     if len(listOfD4arrays) > 0:

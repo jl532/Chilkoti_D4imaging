@@ -2,6 +2,7 @@
 import numpy as np 
 import cv2
 import time
+from operator import itemgetter
 
 arrayCoords = []
 def mouseLocationClick(event,x,y,flags,param):
@@ -12,14 +13,37 @@ def mouseLocationClick(event,x,y,flags,param):
 def pullElementsFromList(datList,argument): # use this when you have a 2d list and want a specific element from each entry
     return [thatSpecificArgument[argument] for thatSpecificArgument in datList]
         
-def circleDistanceSorter(circleArray,position):
+def circleDistanceSorter(circleArray,position,numberofCaptSpots):
     dist = []
     for i in circleArray[0,:]: # calculates the distance from each circle to the center of the array
         distanceFromCenter = np.sqrt( pow((i[0] - position[0]),2) + pow((i[1] - position[1]),2) )
         dist.append(distanceFromCenter) # stores those values into an array
-    pointers = range(len(circles[0,:])) # makes a pointer array that matches the pointers in the "circle" list
-    closestCircles = sorted(zip(dist,pointers),reverse=False) # sorts and returns the sorted list [distance,pointers]
-    return circleArray[0,pullElementsFromList(closestCircles,1)]  # returns the circle List entries sorted by distance using the pointers to the circle List
+    pointers = range(len(circleArray[0,:])) # makes a pointer array that matches the pointers in the "circle" list
+    closestCirclesPointers = sorted(zip(dist,pointers),reverse=False) # sorts and returns the sorted list [distance,pointers]
+    sortedCirclesFromCenter = circleArray[0,pullElementsFromList(closestCirclesPointers,1)] # returns the circle List entries sorted by distance using the pointers to the circle List
+    captureSpots = sortedCirclesFromCenter[:numberofCaptSpots]
+    sortedCaptureSpotsByWhy = sorted(captureSpots, key = itemgetter(1))
+    maxCircleRadius = max(pullElementsFromList(sortedCaptureSpotsByWhy,2))
+    yCoordinateRowOfCircles= sortedCaptureSpotsByWhy[0][1]
+    fullySortedList = []
+    rowCircleList = []
+    for eachCircle in sortedCaptureSpotsByWhy:
+        #print(eachCircle)
+        if (abs(eachCircle[1]-yCoordinateRowOfCircles) < maxCircleRadius):
+            rowCircleList.append(eachCircle)
+            #print(str(eachCircle) + " added")
+        else:
+            rowCirclesSortedByX = sorted(rowCircleList, key = itemgetter(0))
+            fullySortedList = fullySortedList + rowCirclesSortedByX
+            #print(str(rowCircleList) + " flushed")
+            rowCircleList = []
+            yCoordinateRowOfCircles = eachCircle[1]
+            rowCircleList.append(eachCircle)
+    rowCirclesSortedByX = sorted(rowCircleList, key = itemgetter(0))
+    fullySortedList = fullySortedList + rowCirclesSortedByX
+    #print(str(rowCircleList) + " flushed")
+#    print(fullySortedList)        
+    return fullySortedList
 
 def circlePixelID(circleList): # output pixel locations of all circles within the list,
     circleIDpointer = 0
@@ -59,7 +83,7 @@ def rectangleBackgroundAreaDefiner(capturePixelInformation):
                 
 
 fileNameInput = "62,5.tif"
-medianBlurArg = 3 # i think this is the sliding window size, it's a moving averager to remove some random noise
+medianBlurArg = 3 # sliding window size, it's a moving averager to remove some random noise
 HoughCircDP = 1 # don't mess with this for now
 HoughCircMinDist = 25 # the minimum distance between centers of circles (in pixels)
 HoughCircParam1 = 40 # don't mess with this for now, it's used for edge detection
@@ -99,7 +123,7 @@ for i in circles[0,:]:
 cv2.circle(cimg,(arrayCenterPosX,arrayCenterPosY),5,(255,0,0),3)
 
 # compare the distance from the center and categorize which ones are closest (5 for now)
-captureCircles = circleDistanceSorter(circles,[arrayCenterPosX,arrayCenterPosY])[:numberOfCaptureSpots]
+captureCircles = circleDistanceSorter(circles,[arrayCenterPosX,arrayCenterPosY],numberOfCaptureSpots)
 capturePixels = circlePixelID(captureCircles)
 verificationImg[pullElementsFromList(capturePixels,1),pullElementsFromList(capturePixels,0)] = [0,0,250]
 backgroundPixels = rectangleBackgroundAreaDefiner(capturePixels)
@@ -109,9 +133,9 @@ captureIntensities= [ imgRaw[pullElementsFromList(capturePixels,1),pullElementsF
 
 
 
-detectionCircles = circleDistanceSorter(circles,[arrayCenterPosX,arrayCenterPosY])[numberOfCaptureSpots:]
-detectionPixels = circlePixelID(detectionCircles)
-verificationImg[pullElementsFromList(detectionPixels,1),pullElementsFromList(detectionPixels,0)] = [0,255,0]
+#detectionCircles = circleDistanceSorter(circles,[arrayCenterPosX,arrayCenterPosY])
+#detectionPixels = circlePixelID(detectionCircles)
+#verificationImg[pullElementsFromList(detectionPixels,1),pullElementsFromList(detectionPixels,0)] = [0,255,0]
 
 
 finishedTime = time.time() - startTime
