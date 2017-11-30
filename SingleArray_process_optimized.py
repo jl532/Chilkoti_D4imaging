@@ -96,7 +96,7 @@ startTime = time.time()
 
 imgRaw = cv2.imread(fileNameInput,0) # import the raw image here, currently set as "0,488.tif"
 imgsmooth = cv2.medianBlur(imgRaw,medianBlurArg) # low pass filter the image, blurring a pixel with a 3 pixel sliding window
-cimg = cv2.cvtColor(imgRaw,cv2.COLOR_GRAY2BGR) #converts raw image to grayscale
+cimg = cv2.cvtColor(imgRaw,cv2.COLOR_GRAY2BGR) #converts raw image from grayscale to Blue/Green/Red
 verificationImg = cimg.copy();
 
 # this is the line of code that finds the circles in an image. more information about the parameters can be found at:
@@ -140,7 +140,12 @@ captureIntensities= [ imgRaw[pullElementsFromList(capturePixels,1),pullElementsF
 
 finishedTime = time.time() - startTime
 
-cv2.imshow('Raw Image',imgRaw) # show the original raw image
+# cv2.imshow('Raw Image',imgRaw) # show the original raw image
+
+cv2.namedWindow('Raw Image',cv2.WINDOW_NORMAL) # make a named window, and then attach a mouse click event to it as definted in the function def in the beginning of the code
+cv2.setMouseCallback('Raw Image', mouseLocationClick)
+cv2.imshow('Raw Image',imgRaw)
+
 cv2.imshow('Raw Image with Superimposed, identified circles',cimg) # show the raw image with superimposed identified circles
 cv2.imshow('Verification image',verificationImg)
 cv2.waitKey(0) # press any key on the image window to close and terminate the program
