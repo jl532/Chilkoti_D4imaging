@@ -13,7 +13,7 @@ def mouseLocationClick(event,x,y,flags,param):
 
 startTime = time.time()
 
-fileNameInput = "leptin_single_1.tif"
+fileNameInput = "leptin_single_6.tif"
 imageOfCirclesInArray = cv2.imread(fileNameInput,0) # import the raw image here, currently set as "0,488.tif"
 
 # add in user interface for identifying minimum circle distance separation, and average circle radius.
@@ -67,25 +67,24 @@ houghParamList = [HoughCircDP, HoughCircMinDist, HoughCircParam1, HoughCircParam
 # this is the line of code that finds the circles in an image. more information about the parameters can be found at:
 # https://www.pyimagesearch.com/2014/07/21/detecting-circles-images-using-opencv-hough-circles/
     
-rangeOfComparison = 2
-
+rangeOfComparison = 10
 rangeOfParams1 = range(HoughCircParam1 - rangeOfComparison, HoughCircParam1 + rangeOfComparison + 1)
 rangeOfParams2 = range(HoughCircParam2 - rangeOfComparison, HoughCircParam2 + rangeOfComparison + 1)
 
 iterationNumber = 1 
-
-listOfPassedParameters = []
+# listOfPassedParameters = []
 for eachParam1 in rangeOfParams1:
     for eachParam2 in rangeOfParams2:
         circlesRaw = cv2.HoughCircles(circleAlgoImageSmoothed,cv2.cv.CV_HOUGH_GRADIENT,houghParamList[0],houghParamList[1],param1=eachParam1,param2=eachParam2,minRadius=houghParamList[4],maxRadius=houghParamList[5])
         circles = np.uint16(np.around(circlesRaw))
         circleCount = len(circles[0])
         
-        # print( "iteration Number: " + str(iterationNumber) + " param1: " + str(eachParam1) + " param2: " + str(eachParam2) + "  ||| difference in ID  " + str(targetNumberOfSpots - circleCount) )
+        if (targetNumberOfSpots - circleCount) < 5:
+                   print( "close to target < 5 || iter:" + str(iterationNumber) + " param1: " + str(eachParam1) + " param2: " + str(eachParam2) + "  ||| difference in ID  " + str(targetNumberOfSpots - circleCount) )
         iterationNumber = iterationNumber + 1
         
         if circleCount == targetNumberOfSpots:
-            listOfPassedParameters.append("------set of parameters found: param1: " + str(eachParam1) + " param2: " + str(eachParam2) + " with # circles found: " + str(circleCount))
+            # listOfPassedParameters.append("------set of parameters found: param1: " + str(eachParam1) + " param2: " + str(eachParam2) + " with # circles found: " + str(circleCount))
             # print("------set of parameters found: param1: " + str(eachParam1) + " param2: " + str(eachParam2) + " with # circles found: " + str(circleCount))
             verificationImg = cv2.cvtColor(imageOfCirclesInArray,cv2.COLOR_GRAY2BGR)
             for i in circles[0]:
@@ -102,6 +101,7 @@ for eachParam1 in rangeOfParams1:
                 print("------set of parameters found: param1: " + str(eachParam1) + " param2: " + str(eachParam2) + " with # circles found: " + str(circleCount))
                 print("finished in: " + str(time.time() - startTime))
                 sys.exit()
+print("if code reaches this point, then the target number of spots was never identified.")
             
             
 
