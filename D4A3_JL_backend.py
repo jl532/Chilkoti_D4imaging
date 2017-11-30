@@ -139,8 +139,8 @@ for eachArray in range(int(numberOfArrays)):
                 print("using previously analyzed arrays within image to estimate blank capture spot locations")
                 sumCaptureCoordinates = []
                 avgCaptureCoordinates = []
-                    sumCaptureCoordinates.append([0,0,0])
-                    avgCaptureCoordinates.append([0,0,0])
+                sumCaptureCoordinates.append([0,0,0])
+                avgCaptureCoordinates.append([0,0,0])
                 
                 for eachPreviousArray in listD4Arrays:
                     centerCoordinates = eachPreviousArray.centerOfArrayCoordinates
