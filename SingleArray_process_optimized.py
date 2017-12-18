@@ -102,7 +102,7 @@ verificationImg = cimg.copy();
 # this is the line of code that finds the circles in an image. more information about the parameters can be found at:
 # https://www.pyimagesearch.com/2014/07/21/detecting-circles-images-using-opencv-hough-circles/
 
-circles = cv2.HoughCircles(imgsmooth,cv2.cv.CV_HOUGH_GRADIENT,HoughCircDP,HoughCircMinDist,param1=HoughCircParam1,param2=HoughCircParam2,minRadius=HoughCircMinRadius,maxRadius=HoughCircMaxRadius)
+circles = cv2.HoughCircles(imgsmooth,cv2.HOUGH_GRADIENT,HoughCircDP,HoughCircMinDist,param1=HoughCircParam1,param2=HoughCircParam2,minRadius=HoughCircMinRadius,maxRadius=HoughCircMaxRadius)
 
 # rounds and typecasts the circle information into unsigned 16 bit integers 
 circles = np.uint16(np.around(circles))

@@ -13,8 +13,30 @@ def mouseLocationClick(event,x,y,flags,param):
 
 startTime = time.time()
 
-fileNameInput = "leptin_single_6.tif"
+fileNameInput = "leptin_single_3.tif"
 imageOfCirclesInArray = cv2.imread(fileNameInput,0) # import the raw image here, currently set as "0,488.tif"
+
+# crop the image
+
+print("Select Array Area, clicking Top left, and then bottom right. Press x to confirm the area")
+
+# display the fill .tif image
+cv2.namedWindow('Raw Image',cv2.WINDOW_NORMAL) # make a named window, and then attach a mouse click event to it as definted in the function def in the beginning of the code
+cv2.setMouseCallback('Raw Image', mouseLocationClick)
+cv2.imshow('Raw Image', imageOfCirclesInArray)
+keyPress = cv2.waitKey(0)
+if keyPress == ord("x"):
+    arrayBotRigCoords = arrayCoords.pop()
+    arrayTopLefCoords = arrayCoords.pop()      
+    print("subplot coordinates: " + str(arrayBotRigCoords)+ " " + str(arrayTopLefCoords))
+    cv2.destroyAllWindows()
+if keyPress == ord("q"):
+    print("cropping system exit")
+    cv2.destroyAllWindows()
+    sys.exit()
+cropXCoords = sorted([arrayBotRigCoords[0],arrayTopLefCoords[0]])
+cropYCoords = sorted([arrayBotRigCoords[1],arrayTopLefCoords[1]])
+subImg = imageOfCirclesInArray[cropYCoords[0]:cropYCoords[1],cropXCoords[0]:cropXCoords[1]] 
 
 # add in user interface for identifying minimum circle distance separation, and average circle radius.
 
@@ -22,7 +44,7 @@ lowerBoundMinDistance = 10
 print("FINDING THE MINIMUM DISTANCE BETWEEN MICROARRAY SPOTS: click on the centers of two vertically adjacent microarray spots, then press (x) to continue")
 cv2.namedWindow('Circle Parameter Optimization: min distance',cv2.WINDOW_NORMAL) # make a named window, and then attach a mouse click event to it as definted in the function def in the beginning of the code
 cv2.setMouseCallback('Circle Parameter Optimization: min distance', mouseLocationClick)
-cv2.imshow('Circle Parameter Optimization: min distance',imageOfCirclesInArray)
+cv2.imshow('Circle Parameter Optimization: min distance',subImg)
 cv2.waitKey(0)
 
 distTop = arrayCoords.pop()[1]
@@ -35,7 +57,7 @@ radiusBounds = 5
 print("FINDING THE AVERAGE RADIUS OF MICROARRAY SPOTS: click on the OPPOSITE ENDS of one microarray spot (the vertical diameter), then press (x) to continue")
 cv2.namedWindow('Circle Parameter Optimization: radius',cv2.WINDOW_NORMAL) # make a named window, and then attach a mouse click event to it as definted in the function def in the beginning of the code
 cv2.setMouseCallback('Circle Parameter Optimization: radius', mouseLocationClick)
-cv2.imshow('Circle Parameter Optimization: radius',imageOfCirclesInArray)
+cv2.imshow('Circle Parameter Optimization: radius',subImg)
 cv2.waitKey(0)
 
 diameterTop = arrayCoords.pop()[1]
@@ -56,7 +78,7 @@ HoughCircMinRadius = radiusLowerBound # the lower limit of detected circle radiu
 HoughCircMaxRadius = radiusUpperBound # the upper limit of detected circle radius (in pixels) 
 
 medianBlurArg = 3 # sliding window size, it's a moving averager to remove some random noise
-circleAlgoImageSmoothed = cv2.medianBlur(imageOfCirclesInArray,medianBlurArg)
+circleAlgoImageSmoothed = cv2.medianBlur(subImg,medianBlurArg)
     
 HoughCircDP = 1 # don't mess with this for now
 HoughCircParam1 = 40 # don't mess with this for now, it's used for edge detection
@@ -82,11 +104,11 @@ for eachParam1 in rangeOfParams1:
         if (targetNumberOfSpots - circleCount) < 5:
                    print( "close to target < 5 || iter:" + str(iterationNumber) + " param1: " + str(eachParam1) + " param2: " + str(eachParam2) + "  ||| difference in ID  " + str(targetNumberOfSpots - circleCount) )
         iterationNumber = iterationNumber + 1
-        
+        print("searching...")
         if circleCount == targetNumberOfSpots:
             # listOfPassedParameters.append("------set of parameters found: param1: " + str(eachParam1) + " param2: " + str(eachParam2) + " with # circles found: " + str(circleCount))
             # print("------set of parameters found: param1: " + str(eachParam1) + " param2: " + str(eachParam2) + " with # circles found: " + str(circleCount))
-            verificationImg = cv2.cvtColor(imageOfCirclesInArray,cv2.COLOR_GRAY2BGR)
+            verificationImg = cv2.cvtColor(subImg,cv2.COLOR_GRAY2BGR)
             for i in circles[0]:
                 cv2.circle(verificationImg,(i[0],i[1]),i[2],(0,255,0),1) # draw the outer circle
                 cv2.circle(verificationImg,(i[0],i[1]),2,(0,0,255),2) # draw the center of the circle
