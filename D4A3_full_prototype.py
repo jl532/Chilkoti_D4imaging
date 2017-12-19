@@ -6,15 +6,17 @@ import csv
 from operator import itemgetter
 
 # libraries for file I/O
-import tkinter as tk
 from tkinter import filedialog
 from tkinter import messagebox
+import tkinter as tk
+root = tk.Tk()
+root.overrideredirect(1)
+root.withdraw()
 
 # for plotting
 import matplotlib.pyplot as plt
 import pylab # for sigmoid fit
 from scipy.optimize import curve_fit # for sigmoid fit
-
 
 arrayCoords = []
 def mouseLocationClick(event,x,y,flags,param):
@@ -134,7 +136,7 @@ def blankOrLowArrayCheck(listOfD4arrays,capCircles, numberOfCaptSpots): # oinly 
         return capCircles
     else:
         return capCircles
-
+    
 class D4Array:
     "a class that carries all of the information needed for each Array"
     def __init__(self,analyte,concentration,intensities,background,d4fileName,d4coordinates,centerOfArrayCoordinates, captCircles):
@@ -160,11 +162,6 @@ def fileNameFinder(directory):
         if directory[iterChars] == "/":
             locationOfLastSlash = iterChars
     return directory[(locationOfLastSlash+1):]
-
-def clearAllAndExit(root):
-    root.destroy()
-    cv2.destroyAllWindows()
-    sys.exit("force exit")
                 
 # ask for file to select, use Tkinter. ## need to figure out how to make windows go in front.
 startBool = messagebox.askyesno("D4 Automated Analysis Algorithm start page (Jason Liu Dec 2017)",
@@ -195,25 +192,11 @@ while(startBool):
 cv2.namedWindow(file_name, cv2.WINDOW_NORMAL)
 cv2.imshow(file_name,imgRaw)
 
+
 # set up Tkinter menu for selection:
-rootWindow = tk.Tk()
-buttonSingle = tk.Button(rootWindow, 
-                         text = "Analyze Single Array",
-                         command = lambda: print("single array analysis selected"))
-buttonSingle.pack()
-
-buttonMultiple = tk.Button(rootWindow, 
-                           text = "Analyze Multiple Arrays",
-                           command = lambda: print("multiple array analysis selected"))
-buttonMultiple.pack()
-
-buttonQuit = tk.Button(rootWindow, 
-                       text = "Quit Program", 
-                       command=lambda: clearAllAndExit(rootWindow))
-buttonQuit.pack()
-rootWindow.mainloop()
 cv2.destroyAllWindows()
 print("beginning analysis selected...")
+
 
 
 
@@ -221,11 +204,11 @@ print("beginning analysis selected...")
 # user parameters to be used later:
 userPromptBool = True
 while(userPromptBool):
-    IOanalyte = "Leptin" #raw_input("What is the analyte being used in this assay? Just add more in with / separating each:  ")
-    numberOfArrays = 24   #raw_input("How many total Arrays are there in this image?  ")
-    startingConcentration = 500 #raw_input("What is the starting concentration in ng/mL?   ")
-    numberOfCaptureSpots = 5 #raw_input("How many capture spots are there in each Array?  ")
-    numberOfBlanks = 5 #raw_input("How many blanks are there in this image?  ")
+    IOanalyte = raw_input("What is the analyte being used in this assay? Just add more in with / separating each:  ")
+    numberOfArrays = raw_input("How many total Arrays are there in this image?  ")
+    startingConcentration = raw_input("What is the starting concentration in ng/mL?   ")
+    numberOfCaptureSpots = raw_input("How many capture spots are there in each Array?  ")
+    numberOfBlanks = raw_input("How many blanks are there in this image?  ")
     
     print(IOanalyte + " is/are the selected analyte for this slide")
     print(str(numberOfArrays) + " is the number of arrays on this image")
