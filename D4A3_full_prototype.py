@@ -192,38 +192,47 @@ while(startBool):
 cv2.namedWindow(file_name, cv2.WINDOW_NORMAL)
 cv2.imshow(file_name,imgRaw)
 
-
-# set up Tkinter menu for selection:
+# use command line interface to ask user what kind of image this is:
+analysisTypeBool = True
+while(analysisTypeBool):
+    analysisType = input("What kind of image is this? for one array, enter 'one array'. for multiple arrays, enter 'multiple arrays'.")
+    if analysisType == "one array":
+        print("one array analysis mode selected")
+        analysisTypeBool = False
+    elif analysisType == "multiple arrays":
+        print("multiple arrays selected")
+        analysisTypeBool = False
+    else:
+        print("input not recognized. please try again.")
+        
 cv2.destroyAllWindows()
 print("beginning analysis selected...")
 
 
-
+#
 
 
 # user parameters to be used later:
 userPromptBool = True
 while(userPromptBool):
-    IOanalyte = raw_input("What is the analyte being used in this assay? Just add more in with / separating each:  ")
-    numberOfArrays = raw_input("How many total Arrays are there in this image?  ")
-    startingConcentration = raw_input("What is the starting concentration in ng/mL?   ")
-    numberOfCaptureSpots = raw_input("How many capture spots are there in each Array?  ")
-    numberOfBlanks = raw_input("How many blanks are there in this image?  ")
+    IOanalyte = input("What is the analyte being used in this assay? Just add more in with / separating each:  ")
+    numberOfArrays = input("How many total Arrays are there in this image?  ")
+    startingConcentration = input("What is the starting concentration in ng/mL?   ")
+    numberOfCaptureSpots = input("How many capture spots are there in each Array?  ")
+    numberOfBlanks = input("How many blanks are there in this image?  ")
     
     print(IOanalyte + " is/are the selected analyte for this slide")
     print(str(numberOfArrays) + " is the number of arrays on this image")
     print(str(startingConcentration) + " is the starting concentration.")
     print(str(numberOfCaptureSpots) + " is the number of capture spots in each Array")
-    
-    userPromptBool = False
-    
-    #promptVerify = raw_input("verify the information you have entered. enter x to continue, b to redo, q to exit program:   ")
-#    if promptVerify == 'x':
-#        userPromptBool = False
-#    if promptVerify == 'b':
-#        userPromptBool = True
-#    if promptVerify == 'q':
-#        sys.exit()
+        
+    promptVerify = input("verify the information you have entered. enter x to continue, b to redo, q to exit program:   ")
+    if promptVerify == 'x':
+        userPromptBool = False
+    if promptVerify == 'b':
+        userPromptBool = True
+    if promptVerify == 'q':
+        sys.exit()
     
 imgRaw_downSampled_gray = cv2.pyrDown(imgRaw) # image is already grey!
 
