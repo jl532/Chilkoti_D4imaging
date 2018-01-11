@@ -3,7 +3,7 @@
 <b>For new software friends:
 
 Download anaconda 3.5, and google how to download/import the right libraries for opencv to be used in python.
-The IDE that I use is Spyder. Try to get a basic example code running for OpenCV and then come back to me (email me) for more instructions<\b>
+The IDE that I use is Spyder. Try to get a basic example code running for OpenCV and then come back to me (email me) for more instructions</b>
 
 
 To set up the development environment:
